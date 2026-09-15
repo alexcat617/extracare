@@ -1,0 +1,38 @@
+---
+description: ExtraCare Marketplace UI/UX guardrails and build sources for prototype work
+globs: "**/*.{tsx,ts,jsx,js,css}"
+alwaysApply: true
+---
+
+# ExtraCare prototype — UI/UX guardrails
+
+Full doc: [docs/DESIGN-GUARDRAILS.md](docs/DESIGN-GUARDRAILS.md)
+
+## Before coding UI
+
+Read: `docs/DESIGN-GUARDRAILS.md`, `docs/cvs-app-reference/UI-PATTERNS-AND-IA.md` (§1, §3, §5), `APP.md`, active `features/maps/FEAT-XX-map.md` + FEAT + FLOW.
+
+## MUST
+
+- Mobile-first (~430px); Savings tab hosts **Marketplace**; bottom nav Model B (Home · Savings · Shop · Photo · Orders).
+- CVS patterns: blue primary pills, red savings amounts, white cards on gray; segment bar + bottom sheets + coupon card layout for listings.
+- Implement **map nodes**; FLOWS shared rules 1–8 for mocks (transfer, escrow, no browse barcodes, one active listing per entitlement).
+- FLOW-00: consent gate; decline = read-only browse; ExtraCare before transactions.
+- States: empty, loading, blocked, success—not happy-path only.
+- a11y minimum: contrast, focus visible, `aria-label` on icon buttons.
+
+## Demo
+
+- [docs/DEMO-CONTROLS.md](docs/DEMO-CONTROLS.md): prototype panel for consent, ExtraCare, reseed, reset all. **No persona toggle** in app chrome.
+
+## MUST NOT
+
+- New root tab; desktop-first; generic marketplace UI; phone/barcode hack copy; skip consent; Jordan/Sam switcher in header.
+
+## Defaults (until FEAT Decisions change)
+
+First-visit consent sheet; clinical-warm tone; React + Vite + Tailwind.
+
+## Conflicts
+
+Behavior: FEAT/map/AC. Look & patterns: DESIGN-GUARDRAILS + UI-PATTERNS. System truths: FLOWS.md.
