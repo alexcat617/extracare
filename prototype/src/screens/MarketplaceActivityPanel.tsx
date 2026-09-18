@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { ListingStatusChart, WeeklyTrendChart } from '../components/ActivityCharts'
-import { ListingExpiryIndicator } from '../components/ListingExpiryIndicator'
 import { usePrototype } from '../context/PrototypeContext'
 import { computeMarketplaceActivity } from '../lib/marketplaceActivity'
 
@@ -9,7 +8,7 @@ const cardClass =
 
 /** Body-only activity dashboard — rendered inside Savings → Marketplace */
 export function MarketplaceActivityPanel() {
-  const { state, openSheet, tryTransactionalAction } = usePrototype()
+  const { state } = usePrototype()
   const [valueMode, setValueMode] = useState<'saved' | 'earned'>('saved')
 
   const activity = useMemo(() => computeMarketplaceActivity(state), [state])
@@ -83,61 +82,6 @@ export function MarketplaceActivityPanel() {
 
       <WeeklyTrendChart days={activity.weeklyActivity} />
       <ListingStatusChart status={activity.listingStatus} />
-
-      <section className={`${cardClass} p-4`}>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-black">Active listings</h2>
-          <span className="text-xs font-medium text-cvs-gray-muted">
-            {activity.userActiveListings.length} shown
-          </span>
-        </div>
-        {activity.userActiveListings.length === 0 ? (
-          <p className="text-sm text-cvs-gray-muted">
-            List from <strong className="text-black">On card → Not for me</strong> to see them here.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {activity.userActiveListings.map((row) => {
-              const listing = state.listings.find((l) => l.id === row.id)
-              return (
-                <li
-                  key={row.id}
-                  className="flex items-start gap-3 rounded-xl border border-cvs-gray-border/80 bg-cvs-gray-bg/50 px-3 py-3"
-                >
-                  <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-lg shadow-sm"
-                    aria-hidden
-                  >
-                    🎟️
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-black">{row.title}</p>
-                    <p className="text-xs text-cvs-gray-muted">Marketplace · Active</p>
-                    {listing && !activity.usesDemoShowcase ? (
-                      <ListingExpiryIndicator listing={listing} compact />
-                    ) : null}
-                  </div>
-                  {activity.usesDemoShowcase ? (
-                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-bold text-black">
-                      ${row.price.toFixed(2)}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        tryTransactionalAction(() => openSheet('myListingManage', row.id))
-                      }
-                      className="shrink-0 rounded-full border border-cvs-gray-border bg-white px-3 py-1 text-xs font-semibold text-black"
-                    >
-                      Manage
-                    </button>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
     </div>
   )
 }

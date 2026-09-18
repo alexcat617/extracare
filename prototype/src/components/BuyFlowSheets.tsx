@@ -149,6 +149,9 @@ export function BuyFlowSheets() {
               <PrimaryButton onClick={handleConfirmPay} disabled={purchasing}>
                 {purchasing ? 'Processing…' : `Pay $${order.total.toFixed(2)}`}
               </PrimaryButton>
+              <OutlineButton onClick={closeSheet} disabled={purchasing}>
+                Cancel
+              </OutlineButton>
               <p className="text-center text-xs text-cvs-gray-muted">
                 Funds held in escrow until wallet sync completes.
               </p>

@@ -1,6 +1,7 @@
 import { MOCK_SELLER_ID } from '../data/seed'
+import { isUserPublishedListing } from '../lib/marketplaceActivity'
 import type { Listing, ListingType, WalletOffer } from '../types/marketplace'
-import { hasActiveListingForEntitlement, type PrototypeState } from './prototypeStore'
+import { type PrototypeState } from './prototypeStore'
 import { isPriceInBand, normalizePrice, sellerPayout } from '../lib/sellPricing'
 
 export type SellBlockReason = 'not-transferable' | 'already-listed' | 'ineligible' | 'price' | 'expired'
@@ -25,6 +26,19 @@ export function checkSellEligibility(state: PrototypeState): SellEligibility {
   return { ok: true }
 }
 
+/** Active listing published from this member’s wallet (not other sellers’ browse listings). */
+export function findUserActiveListingForEntitlement(
+  state: PrototypeState,
+  entitlementId: string,
+): Listing | undefined {
+  return state.listings.find(
+    (l) =>
+      l.offerEntitlementId === entitlementId &&
+      l.status === 'active' &&
+      isUserPublishedListing(l),
+  )
+}
+
 export function canListWalletOffer(
   state: PrototypeState,
   offer: WalletOffer,
@@ -33,7 +47,7 @@ export function canListWalletOffer(
   if (offer.status === 'reserved' || offer.status === 'voided') {
     return { ok: false, reason: 'already-listed' }
   }
-  if (hasActiveListingForEntitlement(state.listings, offer.entitlementId)) {
+  if (findUserActiveListingForEntitlement(state, offer.entitlementId)) {
     return { ok: false, reason: 'already-listed' }
   }
   const exp = new Date(offer.expiry + 'T23:59:59').getTime()

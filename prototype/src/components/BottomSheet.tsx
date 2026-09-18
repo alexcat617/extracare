@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useContext, useEffect, useState, type ReactNode } from 'react'
+import { PrototypeContext } from '../context/PrototypeContext'
 
 /**
  * compact — rare one-offs; height follows content (max 90vh).
@@ -9,11 +10,19 @@ export type BottomSheetSize = 'compact' | 'flow' | 'tall'
 
 const SHEET_FIXED_HEIGHT = 'h-[90dvh] max-h-[90dvh]'
 
+/** Keep in sync with sheet motion `transition` duration below */
+export const BOTTOM_SHEET_MOTION_MS = 480
+
+const MOTION_CLASS =
+  'transition-all duration-[480ms] ease-out motion-reduce:transition-none'
+
 export const BOTTOM_SHEET_HEIGHT: Record<BottomSheetSize, string> = {
   compact: 'max-h-[90vh]',
   flow: SHEET_FIXED_HEIGHT,
   tall: SHEET_FIXED_HEIGHT,
 }
+
+type DismissAnimation = 'auto' | 'always'
 
 interface BottomSheetProps {
   title: string
@@ -23,6 +32,11 @@ interface BottomSheetProps {
   footer?: ReactNode
   ariaLabel?: string
   size?: BottomSheetSize
+  /**
+   * auto — slide down on dismiss (activeSheet cleared); instant when swapping flow steps.
+   * always — slide down whenever this sheet closes (e.g. prototype panel).
+   */
+  dismissAnimation?: DismissAnimation
 }
 
 export function BottomSheet({
@@ -33,24 +47,78 @@ export function BottomSheet({
   footer,
   ariaLabel,
   size = 'flow',
+  dismissAnimation = 'auto',
 }: BottomSheetProps) {
-  if (!open) return null
+  const prototype = useContext(PrototypeContext)
+  const [visible, setVisible] = useState(open)
+  const [exiting, setExiting] = useState(false)
+  const [entered, setEntered] = useState(false)
+
+  const shouldAnimateDismiss =
+    dismissAnimation === 'always' ||
+    (dismissAnimation === 'auto' && (prototype ? prototype.activeSheet === null : true))
+
+  const shouldAnimateEnter =
+    dismissAnimation === 'always' ||
+    (prototype ? prototype.previousActiveSheet === null : true)
+
+  useEffect(() => {
+    if (open) {
+      setVisible(true)
+      setExiting(false)
+      if (shouldAnimateEnter) {
+        setEntered(false)
+        const id = requestAnimationFrame(() => {
+          requestAnimationFrame(() => setEntered(true))
+        })
+        return () => cancelAnimationFrame(id)
+      }
+      setEntered(true)
+      return
+    }
+
+    if (!visible) return
+
+    if (shouldAnimateDismiss) {
+      setExiting(true)
+      const timer = window.setTimeout(() => {
+        setVisible(false)
+        setExiting(false)
+        setEntered(false)
+      }, BOTTOM_SHEET_MOTION_MS)
+      return () => window.clearTimeout(timer)
+    }
+
+    setVisible(false)
+    setExiting(false)
+    setEntered(false)
+  }, [open, visible, shouldAnimateDismiss, shouldAnimateEnter])
+
+  const requestClose = () => {
+    if (exiting) return
+    onClose()
+  }
+
+  if (!visible) return null
 
   const panelHeight = BOTTOM_SHEET_HEIGHT[size]
+  const offScreen = exiting || !entered
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
       <button
         type="button"
-        className="absolute inset-0 bg-black/40"
+        className={`absolute inset-0 ${MOTION_CLASS} ${offScreen ? 'bg-black/0' : 'bg-black/40'}`}
         aria-label="Dismiss sheet"
-        onClick={onClose}
+        onClick={requestClose}
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel ?? title}
-        className={`relative z-10 flex w-full max-w-[430px] flex-col rounded-t-2xl bg-white shadow-xl ${panelHeight}`}
+        className={`relative z-10 flex w-full max-w-[430px] flex-col rounded-t-2xl bg-white shadow-xl ${panelHeight} ${MOTION_CLASS} ${
+          offScreen ? 'translate-y-full' : 'translate-y-0'
+        }`}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
@@ -132,6 +200,7 @@ export function OutlineButton({
     <button
       type="button"
       onClick={onClick}
+      disabled={false}
       className={`w-full rounded-full border-2 py-3.5 text-center text-base font-semibold ${
         variant === 'destructive'
           ? 'border-cvs-red/30 bg-red-50 text-cvs-red'

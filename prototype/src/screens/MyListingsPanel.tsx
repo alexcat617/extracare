@@ -162,56 +162,24 @@ function TradeRow({
 }) {
   const listing = state.listings.find((l) => l.id === proposal.listingId)
   const offer = listing ? getOfferForListing(state.offers, listing) : undefined
-  const statusCopy =
-    proposal.status === 'pending_seller'
-      ? 'Needs your response'
-      : proposal.status === 'pending_buyer'
-        ? 'Waiting on buyer'
-        : 'In progress'
-
-  const buyerOffers = proposal.buyerWalletOfferIds
-    .map((id) => state.walletOffers.find((w) => w.id === id))
-    .filter(Boolean)
+  const ctaLabel =
+    proposal.status === 'pending_seller' ? 'View proposal' : 'View details'
 
   return (
-    <li className="rounded-[var(--radius-card)] border border-cvs-gray-border bg-white p-3 shadow-sm">
+    <li className="rounded-[var(--radius-card)] border border-cvs-gray-border bg-white p-4 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-wide text-cvs-gray-muted">
         {offer?.title ?? 'Your listing'}
       </p>
-      <p className="text-sm font-semibold text-black">{offer?.headline ?? 'Your listing'}</p>
-      {offer ? (
-        <p className="mt-0.5 text-xs text-cvs-gray-muted">
-          <span className="font-semibold text-cvs-red">${offer.savingsAmount} off</span>
-          {' · '}
-          Exp {offer.expiry}
-        </p>
-      ) : null}
-      {buyerOffers.length > 0 ? (
-        <p className="mt-2 text-xs text-cvs-gray-muted">
-          For:{' '}
-          {buyerOffers
-            .map((w) => `${w!.title} — $${w!.savingsAmount} off (${w!.headline})`)
-            .join('; ')}
-        </p>
-      ) : null}
-      <p className="mt-1 text-xs font-medium text-cvs-blue">{statusCopy}</p>
-      {proposal.status === 'pending_seller' ? (
-        <button
-          type="button"
-          onClick={onView}
-          className="mt-3 w-full rounded-full bg-cvs-blue py-2.5 text-sm font-semibold text-white"
-        >
-          View proposal
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onView}
-          className="mt-3 text-sm font-semibold text-cvs-blue"
-        >
-          View details
-        </button>
-      )}
+      <p className="mt-0.5 text-sm font-semibold text-black">
+        {offer?.headline ?? 'Your listing'}
+      </p>
+      <button
+        type="button"
+        onClick={onView}
+        className="mt-4 w-full rounded-full bg-cvs-blue py-2.5 text-sm font-semibold text-white"
+      >
+        {ctaLabel}
+      </button>
     </li>
   )
 }

@@ -156,6 +156,7 @@ export function DemoControls() {
         ariaLabel="Prototype demo controls — not shopper UI"
 
         size="tall"
+        dismissAnimation="always"
 
       >
 

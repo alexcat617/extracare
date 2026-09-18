@@ -53,6 +53,8 @@ export interface PrototypeState {
   lastTradeTransferIds: [string, string] | null
   /** One-shot: next seller confirm simulates timeout / lock release */
   demoTradeConfirmTimeout: boolean
+  /** Marketplace browse — listing IDs hidden for this member only */
+  hiddenMarketplaceListingIds: string[]
 }
 
 export type DemoPurchaseOutcome = 'none' | 'payment-fail' | 'sold-out' | 'wallet-timeout'
@@ -78,6 +80,7 @@ export const DEFAULT_STATE: PrototypeState = {
   activeTradeProposalId: null,
   lastTradeTransferIds: null,
   demoTradeConfirmTimeout: false,
+  hiddenMarketplaceListingIds: [],
 }
 
 function loadRaw(): Partial<PrototypeState> | null {
@@ -152,6 +155,7 @@ function stateFromSaved(saved: Partial<PrototypeState>, seed: ReturnType<typeof 
     activeTradeProposalId: saved.activeTradeProposalId ?? null,
     lastTradeTransferIds: saved.lastTradeTransferIds ?? null,
     demoTradeConfirmTimeout: saved.demoTradeConfirmTimeout ?? false,
+    hiddenMarketplaceListingIds: saved.hiddenMarketplaceListingIds ?? [],
   }
 }
 

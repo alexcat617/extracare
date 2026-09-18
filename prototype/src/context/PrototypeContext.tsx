@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -28,6 +29,7 @@ import {
   applyPublishListing,
   canListWalletOffer,
   checkSellEligibility,
+  findUserActiveListingForEntitlement,
   publishListing,
 } from '../store/sellActions'
 import type { ListingType } from '../types/marketplace'
@@ -79,6 +81,8 @@ export type PurchaseOutcome = 'success' | PurchaseError
 interface PrototypeContextValue {
   state: PrototypeState
   activeSheet: SheetId
+  /** Sheet id before the latest openSheet/closeSheet (for motion: enter only when null). */
+  previousActiveSheet: SheetId | null
   selectedListingId: string | null
   selectedWalletOfferId: string | null
   setConsentMode: (mode: ConsentMode) => void
@@ -119,6 +123,7 @@ interface PrototypeContextValue {
     price: number,
   ) => 'success' | 'price' | 'blocked' | 'error'
   cancelMyListing: (listingId: string) => 'success' | 'blocked' | 'error'
+  hideMarketplaceListing: (listingId: string) => void
   setDemoEscrowOnListing: (listingId: string | null) => void
   savingsSegment: SavingsSegment
   setSavingsSegment: (seg: SavingsSegment) => void
@@ -138,11 +143,12 @@ export type DataAction =
   | 'open-marketplace'
 export type SellerDemoMode = 'eligible' | 'new-account' | 'listing-cap' | 'no-phone'
 
-const PrototypeContext = createContext<PrototypeContextValue | null>(null)
+export const PrototypeContext = createContext<PrototypeContextValue | null>(null)
 
 export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PrototypeState>(() => loadState())
   const [activeSheet, setActiveSheet] = useState<SheetId>(null)
+  const previousActiveSheetRef = useRef<SheetId | null>(null)
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
   const [selectedWalletOfferId, setSelectedWalletOfferId] = useState<string | null>(null)
   const [mainTab, setMainTab] = useState<MainTab>('savings')
@@ -297,12 +303,18 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   )
 
   const openSheet = useCallback((sheet: SheetId, listingId?: string) => {
-    setActiveSheet(sheet)
+    setActiveSheet((current) => {
+      previousActiveSheetRef.current = current
+      return sheet
+    })
     if (listingId) setSelectedListingId(listingId)
   }, [])
 
   const closeSheet = useCallback(() => {
-    setActiveSheet(null)
+    setActiveSheet((current) => {
+      previousActiveSheetRef.current = current
+      return null
+    })
   }, [])
 
   const tryTransactionalAction = useCallback(
@@ -428,6 +440,19 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     setSavingsSegment('on-card')
   }, [])
 
+  const hideMarketplaceListing = useCallback(
+    (listingId: string) => {
+      patchState((prev) => {
+        if (prev.hiddenMarketplaceListingIds.includes(listingId)) return prev
+        return {
+          ...prev,
+          hiddenMarketplaceListingIds: [...prev.hiddenMarketplaceListingIds, listingId],
+        }
+      })
+    },
+    [patchState],
+  )
+
   const beginSellFromWallet = useCallback(
     (walletOfferId: string) => {
       setSelectedWalletOfferId(walletOfferId)
@@ -441,9 +466,10 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
 
       const listCheck = canListWalletOffer(state, offer)
       if (!listCheck.ok && listCheck.reason === 'already-listed') {
-        setMainTab('savings')
-        setSavingsSegment('marketplace')
-        setMarketplaceView('listings')
+        const existing = findUserActiveListingForEntitlement(state, offer.entitlementId)
+        if (existing) {
+          tryTransactionalAction(() => openSheet('myListingManage', existing.id))
+        }
         return
       }
 
@@ -509,9 +535,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
         if (!result.ok) return prev
         const listingId = result.state.tradeProposals.find((p) => p.id === proposalId)?.listingId
         if (listingId) queueMicrotask(() => setSelectedListingId(listingId))
-        const nextSheet: SheetId =
-          action === 'accept' ? 'tradeSuccess' : 'tradeDeclined'
-        queueMicrotask(() => openSheet(nextSheet))
+        if (action === 'accept') {
+          queueMicrotask(() => openSheet('tradeSuccess'))
+        }
         return result.state
       })
     },
@@ -541,6 +567,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       activeSheet,
+      previousActiveSheet: previousActiveSheetRef.current,
       selectedListingId,
       selectedWalletOfferId,
       setConsentMode,
@@ -571,6 +598,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       refreshListingExpiry,
       updateMyListingPrice,
       cancelMyListing,
+      hideMarketplaceListing,
       setDemoEscrowOnListing,
       savingsSegment,
       setSavingsSegment,
@@ -610,6 +638,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       refreshListingExpiry,
       updateMyListingPrice,
       cancelMyListing,
+      hideMarketplaceListing,
       setDemoEscrowOnListing,
       savingsSegment,
       mainTab,

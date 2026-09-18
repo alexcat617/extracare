@@ -56,7 +56,12 @@
   |--------|-----|
   | **`flow`** | **Journeys and standard sheets** (buy, sell, trade, listings, consent gates): use **`size="flow"`** (fixed **90dvh**) so the panel does not jump between steps. Body scrolls inside the sheet if content is taller. |
   | **`tall`** | Same fixed height as **`flow`** (**90dvh**); use for filters / demo panel if you want the name to signal “tall content.” |
-  | **`compact`** (default) | One-off gates: consent, link ExtraCare, offline, blocked consent, prototype panel. |
+  | **`compact`** | Rare content-sized sheets only; default component size is **`flow`**. |
+- **Bottom sheet motion** (universal—`BottomSheet.tsx`):
+  - **Enter:** Panel slides up only when opening from **no** sheet (`previousActiveSheet === null`)—e.g. first tap Buy on a listing.
+  - **Dismiss:** Close, Cancel, backdrop, and any full exit (`closeSheet()` / `activeSheet === null`) use slide-down + scrim fade. Do **not** duplicate exit animation in feature sheets.
+  - **Multi-step swap:** Changing `activeSheet` from one step to another (listing detail → pay confirm, Not for me → List on Marketplace) **skips both** exit and enter motion—instant step change at 90dvh.
+  - **Prototype-only UI** not tied to `activeSheet`: pass `dismissAnimation="always"`.
 - **FLOW-00:** Decline consent → **read-only browse**; buy/sell/trade re-prompt rules—no silent bypass.
 - **ExtraCare linked** before transactional CTAs (mock link flow, consistent across features).
 - **Trust:** Paid flows surface **escrow** and **official transfer** in plain language (see P2 in PERSONAS).

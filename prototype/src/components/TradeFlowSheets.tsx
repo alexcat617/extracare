@@ -29,7 +29,6 @@ export function TradeFlowSheets() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bundleError, setBundleError] = useState<string | null>(null)
-
   const activeProposal = state.activeTradeProposalId
     ? state.tradeProposals.find((p) => p.id === state.activeTradeProposalId)
     : undefined
@@ -237,7 +236,10 @@ export function TradeFlowSheets() {
                 Accept trade
               </PrimaryButton>
               <OutlineButton
-                onClick={() => respondTradeAsSeller('decline', activeProposal.id)}
+                onClick={() => {
+                  respondTradeAsSeller('decline', activeProposal.id)
+                  closeSheet()
+                }}
               >
                 Decline
               </OutlineButton>
@@ -300,18 +302,6 @@ export function TradeFlowSheets() {
             </p>
           ) : null}
         </div>
-      </BottomSheet>
-
-      <BottomSheet
-        title="Proposal declined"
-        size="flow"
-        open={activeSheet === 'tradeDeclined'}
-        onClose={closeSheet}
-        footer={<PrimaryButton onClick={closeSheet}>OK</PrimaryButton>}
-      >
-        <p className="text-sm text-cvs-gray-muted">
-          The seller declined this trade. Your offers were not locked or transferred.
-        </p>
       </BottomSheet>
 
     </>
