@@ -1,20 +1,40 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import type { ConsentMode, DataAction } from '../context/PrototypeContext'
 import { usePrototype } from '../context/PrototypeContext'
-import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
+import type { DemoPurchaseOutcome } from '../store/prototypeStore'
+import { BottomSheet } from './BottomSheet'
+
+function consentModeFromState(
+  consent: boolean,
+  browseOnly: boolean,
+): ConsentMode {
+  if (consent) return 'given'
+  if (browseOnly) return 'browse-only'
+  return 'not-given'
+}
+
+const selectClass =
+  'w-full rounded-xl border border-cvs-gray-border bg-white px-3 py-3 text-base text-black'
 
 export function DemoControls() {
   const [open, setOpen] = useState(false)
   const {
     state,
-    setExtraCareLinked,
-    setMarketplaceConsent,
-    setOffline,
-    reseedListingsAndWallet,
-    resetAll,
-    navigateToMarketplace,
+    setConsentMode,
+    setExtraCareMode,
+    setOfflineMode,
+    setDemoNextPurchaseOutcome,
+    runDataAction,
   } = usePrototype()
 
-  // expose clearConsent via setMarketplaceConsent(false) - need to add clear or use setMarketplaceConsent
+  const activeListings = state.listings.filter((l) => l.status === 'active')
+
+  const handleDataAction = (value: string) => {
+    if (!value) return
+    const action = value as DataAction
+    runDataAction(action)
+    if (action === 'open-marketplace') setOpen(false)
+  }
 
   return (
     <>
@@ -32,100 +52,103 @@ export function DemoControls() {
         open={open}
         onClose={() => setOpen(false)}
         ariaLabel="Prototype demo controls — not shopper UI"
+        size="tall"
       >
         <p className="mb-4 text-xs text-purple-800">
-          Not production UI. Resets use localStorage.
+          Dropdowns apply immediately. Not shopper UI.
         </p>
 
-        <div className="space-y-5 text-sm">
-          <label className="flex items-center justify-between gap-4">
-            <span className="font-medium">ExtraCare linked</span>
-            <input
-              type="checkbox"
-              checked={state.extraCareLinked}
-              onChange={(e) => setExtraCareLinked(e.target.checked)}
-              aria-label="Toggle ExtraCare linked"
-            />
-          </label>
+        <div className="space-y-4 text-sm">
+          <DemoSelect
+            label="Marketplace consent"
+            value={consentModeFromState(
+              state.marketplaceConsent,
+              state.marketplaceBrowseOnly,
+            )}
+            onChange={(v) => setConsentMode(v as ConsentMode)}
+          >
+            <option value="not-given">Not given (first visit)</option>
+            <option value="given">Given</option>
+            <option value="browse-only">Declined — browse only</option>
+          </DemoSelect>
 
-          <fieldset>
-            <legend className="mb-2 font-medium">Marketplace consent</legend>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  !state.marketplaceConsent
-                    ? 'bg-cvs-blue text-white'
-                    : 'border border-cvs-gray-border'
-                }`}
-                onClick={() => setMarketplaceConsent(false)}
-              >
-                Not given
-              </button>
-              <button
-                type="button"
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  state.marketplaceConsent
-                    ? 'bg-cvs-blue text-white'
-                    : 'border border-cvs-gray-border'
-                }`}
-                onClick={() => setMarketplaceConsent(true)}
-              >
-                Given
-              </button>
-              <button
-                type="button"
-                className="rounded-full border border-cvs-gray-border px-3 py-1 text-xs font-semibold"
-                onClick={() => {
-                  setMarketplaceConsent(false)
-                  setOpen(false)
-                }}
-              >
-                Clear consent
-              </button>
-            </div>
-          </fieldset>
+          <DemoSelect
+            label="ExtraCare"
+            value={state.extraCareLinked ? 'linked' : 'unlinked'}
+            onChange={(v) => setExtraCareMode(v === 'linked')}
+          >
+            <option value="linked">Linked</option>
+            <option value="unlinked">Not linked</option>
+          </DemoSelect>
 
-          <label className="flex items-center justify-between gap-4">
-            <span className="font-medium">Simulate offline</span>
-            <input
-              type="checkbox"
-              checked={state.offline}
-              onChange={(e) => setOffline(e.target.checked)}
-              aria-label="Simulate offline"
-            />
-          </label>
+          <DemoSelect
+            label="Network"
+            value={state.offline ? 'offline' : 'online'}
+            onChange={(v) => setOfflineMode(v === 'offline')}
+          >
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+          </DemoSelect>
 
-          <div className="space-y-2">
-            <PrimaryButton onClick={() => reseedListingsAndWallet()}>
-              Reseed listings &amp; wallet
-            </PrimaryButton>
-            <OutlineButton
-              onClick={() => {
-                resetAll()
-                setOpen(false)
-              }}
-            >
-              Reset all prototype data
-            </OutlineButton>
-            <button
-              type="button"
-              className="w-full text-center text-xs text-cvs-gray-muted underline"
-              onClick={() => {
-                navigateToMarketplace()
-                setOpen(false)
-              }}
-            >
-              Dev: Skip to Marketplace hub
-            </button>
-          </div>
+          <DemoSelect
+            label="Next Pay tap (one try)"
+            value={state.demoNextPurchaseOutcome}
+            onChange={(v) => setDemoNextPurchaseOutcome(v as DemoPurchaseOutcome)}
+          >
+            <option value="none">Normal — success</option>
+            <option value="payment-fail">Payment fails</option>
+            <option value="sold-out">Sold out</option>
+            <option value="wallet-timeout">Wallet timeout → refund</option>
+          </DemoSelect>
+
+          <DemoSelect
+            label="Data action"
+            value=""
+            onChange={handleDataAction}
+          >
+            <option value="">Choose action…</option>
+            <option value="undo-purchases">Undo purchases (restore sold listings)</option>
+            <option value="reseed">Reseed listings + wallet</option>
+            <option value="factory-reset">Factory reset (FLOW-00 fresh)</option>
+            <option value="open-marketplace">Go to Marketplace tab</option>
+          </DemoSelect>
 
           <p className="text-xs text-cvs-gray-muted">
-            Listings: {state.listings.filter((l) => l.status === 'active').length} active · Wallet:{' '}
-            {state.walletOffers.length} offers · Consent v{state.consentVersion ?? '—'}
+            {activeListings.length} active listings · {state.walletOffers.length} on wallet ·
+            Next buy:{' '}
+            <strong className="text-black">
+              {state.demoNextPurchaseOutcome === 'none'
+                ? 'success'
+                : state.demoNextPurchaseOutcome}
+            </strong>
           </p>
         </div>
       </BottomSheet>
     </>
+  )
+}
+
+function DemoSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  children: ReactNode
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block font-semibold text-black">{label}</span>
+      <select
+        className={selectClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {children}
+      </select>
+    </label>
   )
 }

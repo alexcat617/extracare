@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
 
+/** compact: short transactional sheets. tall: filter/refine — panel extends to near top of viewport */
+export type BottomSheetSize = 'compact' | 'tall'
+
 interface BottomSheetProps {
   title: string
   open: boolean
@@ -7,6 +10,7 @@ interface BottomSheetProps {
   children: ReactNode
   footer?: ReactNode
   ariaLabel?: string
+  size?: BottomSheetSize
 }
 
 export function BottomSheet({
@@ -16,8 +20,14 @@ export function BottomSheet({
   children,
   footer,
   ariaLabel,
+  size = 'compact',
 }: BottomSheetProps) {
   if (!open) return null
+
+  const panelHeight =
+    size === 'tall'
+      ? 'h-[90dvh] max-h-[90dvh]'
+      : 'max-h-[90vh]'
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
@@ -31,7 +41,7 @@ export function BottomSheet({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel ?? title}
-        className="relative z-10 w-full max-w-[430px] max-h-[90vh] flex flex-col rounded-t-2xl bg-white shadow-xl"
+        className={`relative z-10 flex w-full max-w-[430px] flex-col rounded-t-2xl bg-white shadow-xl ${panelHeight}`}
       >
         <div className="flex shrink-0 flex-col items-center pt-2 pb-1">
           <div className="h-1 w-10 rounded-full bg-cvs-gray-border" aria-hidden />

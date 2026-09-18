@@ -19,7 +19,12 @@ export interface PrototypeState {
   listings: Listing[]
   walletOffers: WalletOffer[]
   transfers: Transfer[]
+  lastPurchaseTransferId: string | null
+  /** FEAT-01: one-shot outcome for the next Pay tap (then resets to none) */
+  demoNextPurchaseOutcome: DemoPurchaseOutcome
 }
+
+export type DemoPurchaseOutcome = 'none' | 'payment-fail' | 'sold-out' | 'wallet-timeout'
 
 export const DEFAULT_STATE: PrototypeState = {
   extraCareLinked: true,
@@ -31,6 +36,8 @@ export const DEFAULT_STATE: PrototypeState = {
   listings: [],
   walletOffers: [],
   transfers: [],
+  lastPurchaseTransferId: null,
+  demoNextPurchaseOutcome: 'none',
 }
 
 function loadRaw(): Partial<PrototypeState> | null {
@@ -53,6 +60,19 @@ export function reseedData(): Pick<PrototypeState, 'offers' | 'listings' | 'wall
   }
 }
 
+/** Full marketplace + wallet seed; keeps consent/ExtraCare/demo scenario flags */
+export function reseedListingsAndWalletState(prev: PrototypeState): PrototypeState {
+  const seed = reseedData()
+  return {
+    ...prev,
+    offers: seed.offers,
+    listings: seed.listings,
+    walletOffers: seed.walletOffers,
+    transfers: [],
+    lastPurchaseTransferId: null,
+  }
+}
+
 export function loadState(): PrototypeState {
   const saved = loadRaw()
   const seed = reseedData()
@@ -70,7 +90,18 @@ export function loadState(): PrototypeState {
     listings: saved.listings?.length ? saved.listings : seed.listings,
     walletOffers: saved.walletOffers?.length ? saved.walletOffers : seed.walletOffers,
     transfers: saved.transfers ?? [],
+    lastPurchaseTransferId: saved.lastPurchaseTransferId ?? null,
+    demoNextPurchaseOutcome: migrateDemoOutcome(saved),
   }
+}
+
+function migrateDemoOutcome(saved: Partial<PrototypeState>): DemoPurchaseOutcome {
+  if (saved.demoNextPurchaseOutcome) return saved.demoNextPurchaseOutcome
+  const legacy = saved as Record<string, unknown>
+  if (legacy.demoSimulatePaymentFail) return 'payment-fail'
+  if (legacy.demoSimulateWalletTimeout) return 'wallet-timeout'
+  if (legacy.demoSimulateSoldListingId) return 'sold-out'
+  return 'none'
 }
 
 export function persistState(state: PrototypeState): void {
@@ -91,6 +122,8 @@ export function resetAllPrototypeData(): PrototypeState {
     marketplaceBrowseOnly: false,
     consentVersion: null,
     offline: false,
+    lastPurchaseTransferId: null,
+    demoNextPurchaseOutcome: 'none',
   }
   persistState(fresh)
   return fresh

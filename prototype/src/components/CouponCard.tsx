@@ -19,6 +19,7 @@ interface CouponCardProps {
   secondaryAction?: { label: string; onClick: () => void }
   marketplace?: boolean
   price?: number
+  transferId?: string
 }
 
 export function CouponCard({
@@ -28,6 +29,7 @@ export function CouponCard({
   secondaryAction,
   marketplace,
   price,
+  transferId,
 }: CouponCardProps) {
   const isLastDay = badge === 'Expires soon' || badge === 'Last day'
 
@@ -63,6 +65,11 @@ export function CouponCard({
           </p>
           <p className="text-sm font-medium text-black">{offer.headline}</p>
           <p className="mt-1 text-xs text-cvs-gray-muted">Exp {formatExpiry(offer.expiry)}</p>
+          {transferId ? (
+            <p className="mt-1 text-xs font-medium text-cvs-blue">
+              Transfer ID: <span className="font-mono">{transferId}</span>
+            </p>
+          ) : null}
           {marketplace && price != null ? (
             <p className="mt-1 text-sm font-semibold text-black">Buy for ${price.toFixed(2)}</p>
           ) : null}

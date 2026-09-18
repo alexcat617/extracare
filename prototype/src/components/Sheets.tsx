@@ -1,25 +1,21 @@
 import { useState } from 'react'
 import { usePrototype } from '../context/PrototypeContext'
-import { getOfferForListing } from '../store/prototypeStore'
+import { BuyFlowSheets } from './BuyFlowSheets'
 import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
+import { MobileCheckboxCard } from './MobileFormControls'
 
 export function SheetHost() {
   const {
     state,
     activeSheet,
-    selectedListingId,
     closeSheet,
     acceptMarketplaceRules,
     declineMarketplaceRules,
-    setExtraCareLinked,
+    setExtraCareMode,
     openSheet,
-    tryTransactionalAction,
   } = usePrototype()
 
   const [consentChecked, setConsentChecked] = useState(false)
-
-  const listing = state.listings.find((l) => l.id === selectedListingId)
-  const listingOffer = listing ? getOfferForListing(state.offers, listing) : undefined
 
   const openConsentFromBlocked = () => {
     closeSheet()
@@ -36,18 +32,12 @@ export function SheetHost() {
         ariaLabel="Marketplace rules and consent"
         footer={
           <div className="space-y-3">
-            <label className="flex items-start gap-3 text-sm text-black">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4"
-                checked={consentChecked}
-                onChange={(e) => setConsentChecked(e.target.checked)}
-              />
-              <span>
-                I agree to marketplace terms. Offers move to the buyer&apos;s ExtraCare card through
-                an official transfer—no barcode screenshots or phone-number trades.
-              </span>
-            </label>
+            <MobileCheckboxCard
+              checked={consentChecked}
+              onChange={setConsentChecked}
+              label="I agree to marketplace terms"
+              hint="Offers move to your ExtraCare card through an official transfer—no barcode screenshots or phone-number trades."
+            />
             <PrimaryButton
               disabled={!consentChecked}
               onClick={() => {
@@ -91,7 +81,7 @@ export function SheetHost() {
         footer={
           <PrimaryButton
             onClick={() => {
-              setExtraCareLinked(true)
+              setExtraCareMode(true)
               closeSheet()
             }}
           >
@@ -134,60 +124,7 @@ export function SheetHost() {
         </p>
       </BottomSheet>
 
-      <BottomSheet
-        title={listingOffer?.title ?? 'Listing'}
-        open={activeSheet === 'listingDetail'}
-        onClose={closeSheet}
-        footer={
-          listing && listingOffer ? (
-            <PrimaryButton
-              onClick={() =>
-                tryTransactionalAction(() => {
-                  closeSheet()
-                  openSheet('feat01Stub')
-                })
-              }
-            >
-              Buy — ${listing.price.toFixed(2)}
-            </PrimaryButton>
-          ) : undefined
-        }
-      >
-        {listing && listingOffer ? (
-          <div className="space-y-3 text-sm">
-            <p className="text-xl font-bold text-cvs-red">
-              ${listingOffer.savingsAmount} off — ${listing.price.toFixed(2)} to buy
-            </p>
-            <p>{listingOffer.headline}</p>
-            <ul className="list-disc space-y-1 pl-5 text-cvs-gray-muted">
-              {listingOffer.minPurchase ? (
-                <li>Minimum purchase: ${listingOffer.minPurchase}</li>
-              ) : null}
-              <li>Channel: {listingOffer.channel.replace('-', ' ')}</li>
-              <li>Expires: {listingOffer.expiry}</li>
-              {listingOffer.stackSummary ? <li>{listingOffer.stackSummary}</li> : null}
-            </ul>
-            <p className="rounded-lg bg-blue-50 p-3 text-xs text-cvs-blue-dark">
-              Terms preview only—no scannable barcode. Full offer appears in wallet after official
-              transfer (FEAT-01).
-            </p>
-          </div>
-        ) : (
-          <p className="text-sm text-cvs-gray-muted">Listing not found.</p>
-        )}
-      </BottomSheet>
-
-      <BottomSheet
-        title="Buy flow"
-        open={activeSheet === 'feat01Stub'}
-        onClose={closeSheet}
-        footer={<OutlineButton onClick={closeSheet}>Close</OutlineButton>}
-      >
-        <p className="text-sm text-cvs-gray-muted">
-          <strong className="text-black">FEAT-01 stub:</strong> Browse, escrow confirm, and wallet
-          success will ship in the next build package. Consent and ExtraCare gates are wired.
-        </p>
-      </BottomSheet>
+      <BuyFlowSheets />
 
       <BottomSheet
         title="Sell on Marketplace"

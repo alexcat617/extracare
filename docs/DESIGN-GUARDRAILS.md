@@ -94,6 +94,17 @@ Target intent: [PRD § NFR](../PRD-cvs-coupon-marketplace.md) WCAG 2.2 AA.
 - Sheets: labeled dismiss; sensible focus order.  
 - Status: not **color-only** (text/badge/icon).
 
+### Mobile checkboxes & radios (MUST in prototype code)
+
+Do **not** use bare 16px inputs in shopper UI. Use shared components in `prototype/src/components/MobileFormControls.tsx`:
+
+| Component | Use |
+|-----------|-----|
+| **`MobileCheckboxCard`** | Consent, multi-select, agree-to-terms |
+| **`MobileRadioCard`** | Payment method, single choice lists |
+
+Pattern: **full-width card** (min height **56px**), **24×24px** control (`accent-cvs-blue`), bold label + optional gray hint, **selected** = blue border + light blue fill. Entire row is tappable. Prototype panel may use native `<select>` for demo ops; shopper flows use these cards.
+
 ---
 
 ## 8. Code & scope (prototype)
