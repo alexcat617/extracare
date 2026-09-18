@@ -29,6 +29,7 @@ One tap each: resets the right mock state and navigates. Presets do **not** auto
 |--------|--------|------------|
 | **Fresh start** | Factory reset (consent off, seed data) | Savings → All |
 | **Sam: Browse & buy** | Consent given, reseed marketplace + wallet | Savings → Marketplace **Browse** |
+| **Sam: Orders & escrow** | Consent given + sample completed purchase | **Orders** tab (FEAT-05) |
 | **Jordan: Listings** | Consent given, Jordan seller pack (listings + pending trade inbox) | Marketplace → **Listings** |
 
 **Trade demo:** **Jordan: Listings** → **Review trade offer** → **Accept trade** → success sheet. Sam = buyer (`MOCK_MEMBER_ID`); Jordan = seller (`MOCK_SELLER_ID`).
@@ -45,6 +46,8 @@ Edge cases and maintenance—not needed for a clean case-study walkthrough.
 | **ExtraCare linked** | On/off — link gate when off |
 | **Network** | Online / Offline |
 | **Next Pay tap** | One-shot: payment fail, sold out, wallet timeout |
+| **Next buy — trust scenario** | One-shot: offer missing from wallet, or wallet terms ≠ listing snapshot |
+| **Mark last purchase redeemed** | Blocks in-app refund (FLOW-06 abuse path) |
 | **Seller eligibility** | Jordan blocked scenarios (new account, cap, no phone) |
 | **Undo purchases** | Restore sold listings from wallet demos |
 | **Reseed listings + wallet** | Reload seed without full factory reset |

@@ -55,6 +55,16 @@ export interface PrototypeState {
   demoTradeConfirmTimeout: boolean
   /** Marketplace browse — listing IDs hidden for this member only */
   hiddenMarketplaceListingIds: string[]
+  /** FEAT-05: one-shot — success transfer without wallet offer */
+  demoNextPurchaseMissingWallet: boolean
+  /** FEAT-05: one-shot — wallet offer terms differ from listing snapshot */
+  demoNextPurchaseTermsMismatch: boolean
+  /** FEAT-05: transfer IDs with POS redemption (blocks refund) */
+  redeemedTransferIds: string[]
+  /** FEAT-05: transfer IDs that already had a retry delivery attempt */
+  disputeRetriedTransferIds: Record<string, boolean>
+  /** Transfer IDs where retry delivery is simulated to fail (missing-wallet demo) */
+  demoForceMissingWalletTransferIds: string[]
 }
 
 export type DemoPurchaseOutcome = 'none' | 'payment-fail' | 'sold-out' | 'wallet-timeout'
@@ -81,6 +91,11 @@ export const DEFAULT_STATE: PrototypeState = {
   lastTradeTransferIds: null,
   demoTradeConfirmTimeout: false,
   hiddenMarketplaceListingIds: [],
+  demoNextPurchaseMissingWallet: false,
+  demoNextPurchaseTermsMismatch: false,
+  redeemedTransferIds: [],
+  disputeRetriedTransferIds: {},
+  demoForceMissingWalletTransferIds: [],
 }
 
 function loadRaw(): Partial<PrototypeState> | null {
@@ -156,6 +171,11 @@ function stateFromSaved(saved: Partial<PrototypeState>, seed: ReturnType<typeof 
     lastTradeTransferIds: saved.lastTradeTransferIds ?? null,
     demoTradeConfirmTimeout: saved.demoTradeConfirmTimeout ?? false,
     hiddenMarketplaceListingIds: saved.hiddenMarketplaceListingIds ?? [],
+    demoNextPurchaseMissingWallet: saved.demoNextPurchaseMissingWallet ?? false,
+    demoNextPurchaseTermsMismatch: saved.demoNextPurchaseTermsMismatch ?? false,
+    redeemedTransferIds: saved.redeemedTransferIds ?? [],
+    disputeRetriedTransferIds: saved.disputeRetriedTransferIds ?? {},
+    demoForceMissingWalletTransferIds: saved.demoForceMissingWalletTransferIds ?? [],
   }
 }
 

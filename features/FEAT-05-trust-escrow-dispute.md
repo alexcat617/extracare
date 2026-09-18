@@ -62,5 +62,5 @@ Buyers see clear escrow/protected-purchase states; can report issues within 24h;
 
 ## Build handoff
 
-- [ ] Read [FEAT-05-map](./maps/FEAT-05-map.md) + this file + FLOW-06
-- [ ] Entry from [FEAT-01-map](./maps/FEAT-01-map.md) post-purchase nodes
+- [x] Read [FEAT-05-map](./maps/FEAT-05-map.md) + this file + FLOW-06
+- [x] Entry from [FEAT-01-map](./maps/FEAT-01-map.md) post-purchase nodes (buy success + Orders tab)

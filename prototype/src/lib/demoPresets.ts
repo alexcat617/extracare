@@ -1,4 +1,5 @@
 import { mergeMyListingsDemoIntoState } from '../data/myListingsDemo'
+import { mergeSamPurchaseDemo } from '../data/purchaseDemo'
 import {
   recordConsent,
   reseedListingsAndWalletState,
@@ -6,7 +7,7 @@ import {
   type PrototypeState,
 } from '../store/prototypeStore'
 
-export type DemoPreset = 'fresh-start' | 'sam-buy' | 'jordan-listings'
+export type DemoPreset = 'fresh-start' | 'sam-buy' | 'sam-orders' | 'jordan-listings'
 
 export interface DemoPresetOutcome {
   state: PrototypeState
@@ -14,6 +15,7 @@ export interface DemoPresetOutcome {
   selectedListingId: string | null
   savingsSegment: 'all' | 'on-card' | 'for-you' | 'marketplace'
   marketplaceView: 'browse' | 'activity' | 'listings'
+  mainTab: 'home' | 'savings' | 'shop' | 'photo' | 'orders'
 }
 
 function withConsentAndJordanPack(prev: PrototypeState): PrototypeState {
@@ -44,6 +46,7 @@ export function applyDemoPreset(
         selectedListingId: null,
         savingsSegment: 'all',
         marketplaceView: 'browse',
+        mainTab: 'savings',
       }
     }
     case 'sam-buy': {
@@ -53,6 +56,18 @@ export function applyDemoPreset(
         selectedListingId: null,
         savingsSegment: 'marketplace',
         marketplaceView: 'browse',
+        mainTab: 'savings',
+      }
+    }
+    case 'sam-orders': {
+      const packed = withConsentAndJordanPack(prev)
+      return {
+        state: mergeSamPurchaseDemo(packed),
+        openSheet: null,
+        selectedListingId: null,
+        savingsSegment: 'marketplace',
+        marketplaceView: 'browse',
+        mainTab: 'orders',
       }
     }
     case 'jordan-listings': {
@@ -62,6 +77,7 @@ export function applyDemoPreset(
         selectedListingId: null,
         savingsSegment: 'marketplace',
         marketplaceView: 'listings',
+        mainTab: 'savings',
       }
     }
   }

@@ -45,6 +45,12 @@ import {
   sellerRespondTrade,
 } from '../store/tradeActions'
 import { applyDemoPreset, type DemoPreset } from '../lib/demoPresets'
+import {
+  stepNotInWalletDispute,
+  stepTermsMismatchDispute,
+  type NotInWalletDisputeOutcome,
+  type TermsDisputeOutcome,
+} from '../store/trustActions'
 
 export type SheetId =
   | 'consent'
@@ -72,6 +78,16 @@ export type SheetId =
   | 'myListingCancelConfirm'
   | 'myListingBlocked'
   | 'myListingCancelled'
+  | 'purchaseStatus'
+  | 'disputeTypePick'
+  | 'disputeLateSupport'
+  | 'disputeCheckingWallet'
+  | 'disputeOfferInWallet'
+  | 'disputeRetryPending'
+  | 'disputeRefundSuccess'
+  | 'disputeRefundDenied'
+  | 'disputeTermsEducate'
+  | 'disputeProtection'
   | null
 
 export type PublishOutcome = 'success' | 'price' | 'ineligible' | 'error'
@@ -85,10 +101,15 @@ interface PrototypeContextValue {
   previousActiveSheet: SheetId | null
   selectedListingId: string | null
   selectedWalletOfferId: string | null
+  selectedTransferId: string | null
   setConsentMode: (mode: ConsentMode) => void
   setExtraCareMode: (linked: boolean) => void
   setOfflineMode: (offline: boolean) => void
   setDemoNextPurchaseOutcome: (outcome: DemoPurchaseOutcome) => void
+  setDemoTrustScenario: (
+    scenario: 'none' | 'missing-wallet' | 'terms-mismatch' | 'redeemed',
+    transferId?: string,
+  ) => void
   setSellerDemoMode: (mode: SellerDemoMode) => void
   runDataAction: (action: DataAction) => void
   runDemoPreset: (preset: DemoPreset) => void
@@ -124,6 +145,9 @@ interface PrototypeContextValue {
   ) => 'success' | 'price' | 'blocked' | 'error'
   cancelMyListing: (listingId: string) => 'success' | 'blocked' | 'error'
   hideMarketplaceListing: (listingId: string) => void
+  openPurchaseStatus: (transferId: string) => void
+  runDisputeWalletCheck: (transferId: string) => NotInWalletDisputeOutcome
+  runDisputeTermsResolution: (transferId: string) => TermsDisputeOutcome
   setDemoEscrowOnListing: (listingId: string | null) => void
   savingsSegment: SavingsSegment
   setSavingsSegment: (seg: SavingsSegment) => void
@@ -151,6 +175,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const previousActiveSheetRef = useRef<SheetId | null>(null)
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
   const [selectedWalletOfferId, setSelectedWalletOfferId] = useState<string | null>(null)
+  const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null)
   const [mainTab, setMainTab] = useState<MainTab>('savings')
   const [savingsSegment, setSavingsSegment] = useState<SavingsSegment>('all')
   const [marketplaceView, setMarketplaceView] = useState<MarketplaceView>('browse')
@@ -192,6 +217,54 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const setDemoNextPurchaseOutcome = useCallback(
     (outcome: DemoPurchaseOutcome) =>
       patchState((prev) => ({ ...prev, demoNextPurchaseOutcome: outcome })),
+    [patchState],
+  )
+
+  const setDemoTrustScenario = useCallback(
+    (
+      scenario: 'none' | 'missing-wallet' | 'terms-mismatch' | 'redeemed',
+      transferId?: string,
+    ) => {
+      patchState((prev) => {
+        const base = {
+          ...prev,
+          demoNextPurchaseMissingWallet: scenario === 'missing-wallet',
+          demoNextPurchaseTermsMismatch: scenario === 'terms-mismatch',
+        }
+        if (scenario !== 'redeemed' || !transferId) return base
+        if (prev.redeemedTransferIds.includes(transferId)) return base
+        return {
+          ...base,
+          redeemedTransferIds: [...prev.redeemedTransferIds, transferId],
+        }
+      })
+    },
+    [patchState],
+  )
+
+  const runDisputeWalletCheck = useCallback(
+    (transferId: string): NotInWalletDisputeOutcome => {
+      let outcome: NotInWalletDisputeOutcome = 'retry'
+      patchState((prev) => {
+        const result = stepNotInWalletDispute(prev, transferId)
+        outcome = result.outcome
+        return result.state
+      })
+      return outcome
+    },
+    [patchState],
+  )
+
+  const runDisputeTermsResolution = useCallback(
+    (transferId: string): TermsDisputeOutcome => {
+      let outcome: TermsDisputeOutcome = 'match'
+      patchState((prev) => {
+        const result = stepTermsMismatchDispute(prev, transferId)
+        outcome = result.outcome
+        return result.state
+      })
+      return outcome
+    },
     [patchState],
   )
 
@@ -286,7 +359,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
           persistState(outcome.state)
         }
         queueMicrotask(() => {
-          setMainTab('savings')
+          setMainTab(outcome.mainTab)
           setSavingsSegment(outcome.savingsSegment)
           setMarketplaceView(outcome.marketplaceView)
           setSelectedListingId(outcome.selectedListingId)
@@ -316,6 +389,14 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       return null
     })
   }, [])
+
+  const openPurchaseStatus = useCallback(
+    (transferId: string) => {
+      setSelectedTransferId(transferId)
+      openSheet('purchaseStatus')
+    },
+    [openSheet],
+  )
 
   const tryTransactionalAction = useCallback(
     (action: () => void) => {
@@ -354,7 +435,10 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
         }
         const next = applyPurchaseSuccess(cleared, listingId, result)
         persistState(next)
-        queueMicrotask(() => resolve('success'))
+        queueMicrotask(() => {
+          setSelectedTransferId(next.lastPurchaseTransferId)
+          resolve('success')
+        })
         return next
       })
     })
@@ -570,10 +654,12 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       previousActiveSheet: previousActiveSheetRef.current,
       selectedListingId,
       selectedWalletOfferId,
+      selectedTransferId,
       setConsentMode,
       setExtraCareMode,
       setOfflineMode,
       setDemoNextPurchaseOutcome,
+      setDemoTrustScenario,
       setSellerDemoMode,
       acceptMarketplaceRules,
       declineMarketplaceRules,
@@ -599,6 +685,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       updateMyListingPrice,
       cancelMyListing,
       hideMarketplaceListing,
+      openPurchaseStatus,
+      runDisputeWalletCheck,
+      runDisputeTermsResolution,
       setDemoEscrowOnListing,
       savingsSegment,
       setSavingsSegment,
@@ -610,10 +699,12 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       activeSheet,
       selectedListingId,
       selectedWalletOfferId,
+      selectedTransferId,
       setConsentMode,
       setExtraCareMode,
       setOfflineMode,
       setDemoNextPurchaseOutcome,
+      setDemoTrustScenario,
       setSellerDemoMode,
       acceptMarketplaceRules,
       declineMarketplaceRules,
@@ -639,6 +730,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       updateMyListingPrice,
       cancelMyListing,
       hideMarketplaceListing,
+      openPurchaseStatus,
+      runDisputeWalletCheck,
+      runDisputeTermsResolution,
       setDemoEscrowOnListing,
       savingsSegment,
       mainTab,
