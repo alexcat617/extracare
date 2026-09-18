@@ -7,6 +7,8 @@ import { usePrototype } from '../context/PrototypeContext'
 import { CouponOfferSection } from './CouponOfferSection'
 import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
 
+const LISTING_CANCEL_SUCCESS_MS = 1000
+
 export function MyListingFlowSheets() {
   const {
     state,
@@ -38,6 +40,12 @@ export function MyListingFlowSheets() {
     }
   }, [activeSheet, listing, askingPrice])
 
+  useEffect(() => {
+    if (activeSheet !== 'myListingCancelled') return
+    const id = window.setTimeout(() => closeSheet(), LISTING_CANCEL_SUCCESS_MS)
+    return () => window.clearTimeout(id)
+  }, [activeSheet, closeSheet])
+
   const handleSavePrice = () => {
     if (!selectedListingId) return
     const parsed = parseFloat(askingPrice)
@@ -65,7 +73,6 @@ export function MyListingFlowSheets() {
       return
     }
     if (result === 'success') {
-      closeSheet()
       openSheet('myListingCancelled')
     }
   }
@@ -243,9 +250,8 @@ export function MyListingFlowSheets() {
         size="flow"
         open={activeSheet === 'myListingCancelled'}
         onClose={closeSheet}
-        footer={<PrimaryButton onClick={closeSheet}>Done</PrimaryButton>}
       >
-        <div className="space-y-4 text-sm text-cvs-gray-muted">
+        <div className="space-y-4 text-sm text-cvs-gray-muted" role="status" aria-live="polite">
           <SuccessBanner title="Listing cancelled" />
           <p>
             Your coupon is back on your card. Check <strong className="text-black">On card</strong>{' '}
