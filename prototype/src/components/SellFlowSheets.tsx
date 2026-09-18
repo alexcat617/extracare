@@ -14,7 +14,7 @@ export function SellFlowSheets() {
     openSheet,
     publishWalletListing,
     navigateToMarketplace,
-    openMarketplaceActivity,
+    openMarketplaceListings,
   } = usePrototype()
 
   const walletOffer = state.walletOffers.find((w) => w.id === selectedWalletOfferId)
@@ -219,7 +219,7 @@ export function SellFlowSheets() {
             <OutlineButton
               onClick={() => {
                 closeSheet()
-                openMarketplaceActivity()
+                openMarketplaceListings()
               }}
             >
               My listings

@@ -31,6 +31,12 @@ import {
 } from '../store/sellActions'
 import type { ListingType } from '../types/marketplace'
 import {
+  applyCancelListing,
+  applyDemoEscrowOnListing,
+  applyUpdateListingPrice,
+  processAutoExpireListings,
+} from '../store/listingManageActions'
+import {
   applyTradeProposalSent,
   confirmTradeParty,
   createTradeProposal,
@@ -62,6 +68,11 @@ export type SheetId =
   | 'tradeSuccess'
   | 'tradeDeclined'
   | 'tradeExpired'
+  | 'myListingManage'
+  | 'myListingEditPrice'
+  | 'myListingCancelConfirm'
+  | 'myListingBlocked'
+  | 'myListingCancelled'
   | null
 
 export type PublishOutcome = 'success' | 'price' | 'ineligible' | 'error'
@@ -103,8 +114,16 @@ interface PrototypeContextValue {
   navigateToMarketplace: () => void
   marketplaceView: MarketplaceView
   openMarketplaceActivity: () => void
+  openMarketplaceListings: () => void
   closeMarketplaceActivity: () => void
   goToWallet: () => void
+  refreshListingExpiry: () => void
+  updateMyListingPrice: (
+    listingId: string,
+    price: number,
+  ) => 'success' | 'price' | 'blocked' | 'error'
+  cancelMyListing: (listingId: string) => 'success' | 'blocked' | 'error'
+  setDemoEscrowOnListing: (listingId: string | null) => void
   savingsSegment: SavingsSegment
   setSavingsSegment: (seg: SavingsSegment) => void
   mainTab: MainTab
@@ -113,7 +132,7 @@ interface PrototypeContextValue {
 
 export type MainTab = 'home' | 'savings' | 'shop' | 'photo' | 'orders'
 export type SavingsSegment = 'all' | 'on-card' | 'for-you' | 'marketplace'
-export type MarketplaceView = 'browse' | 'activity'
+export type MarketplaceView = 'browse' | 'activity' | 'listings'
 export type ConsentMode = 'not-given' | 'given' | 'browse-only'
 export type DataAction = 'undo-purchases' | 'reseed' | 'factory-reset' | 'open-marketplace'
 export type SellerDemoMode = 'eligible' | 'new-account' | 'listing-cap' | 'no-phone'
@@ -312,9 +331,68 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     setMarketplaceView('activity')
   }, [])
 
+  const openMarketplaceListings = useCallback(() => {
+    setMainTab('savings')
+    setSavingsSegment('marketplace')
+    setMarketplaceView('listings')
+    patchState((prev) => processAutoExpireListings(prev))
+  }, [patchState])
+
   const closeMarketplaceActivity = useCallback(() => {
     setMarketplaceView('browse')
   }, [])
+
+  const refreshListingExpiry = useCallback(() => {
+    patchState((prev) => processAutoExpireListings(prev))
+  }, [patchState])
+
+  const updateMyListingPrice = useCallback(
+    (listingId: string, price: number): 'success' | 'price' | 'blocked' | 'error' => {
+      let outcome: 'success' | 'price' | 'blocked' | 'error' = 'error'
+      patchState((prev) => {
+        const result = applyUpdateListingPrice(prev, listingId, price)
+        if (!result.ok) {
+          if (result.reason === 'price') outcome = 'price'
+          else if (result.reason === 'blocked') outcome = 'blocked'
+          else outcome = 'error'
+          return prev
+        }
+        outcome = 'success'
+        return result.state
+      })
+      return outcome
+    },
+    [patchState],
+  )
+
+  const cancelMyListing = useCallback(
+    (listingId: string): 'success' | 'blocked' | 'error' => {
+      let outcome: 'success' | 'blocked' | 'error' = 'error'
+      patchState((prev) => {
+        const result = applyCancelListing(prev, listingId)
+        if (!result.ok) {
+          outcome = result.reason === 'blocked' ? 'blocked' : 'error'
+          return prev
+        }
+        outcome = 'success'
+        return result.state
+      })
+      return outcome
+    },
+    [patchState],
+  )
+
+  const setDemoEscrowOnListing = useCallback(
+    (listingId: string | null) => {
+      patchState((prev) => {
+        const cleared = prev.transfers.filter((t) => t.status !== 'pending' || !t.id.startsWith('ESC-'))
+        const base = { ...prev, transfers: cleared }
+        if (!listingId) return base
+        return applyDemoEscrowOnListing(base, listingId)
+      })
+    },
+    [patchState],
+  )
 
   const goToWallet = useCallback(() => {
     setMainTab('savings')
@@ -334,6 +412,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
 
       const listCheck = canListWalletOffer(state, offer)
       if (!listCheck.ok && listCheck.reason === 'already-listed') {
+        setMainTab('savings')
+        setSavingsSegment('marketplace')
+        setMarketplaceView('listings')
         return
       }
 
@@ -492,8 +573,13 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       navigateToMarketplace,
       marketplaceView,
       openMarketplaceActivity,
+      openMarketplaceListings,
       closeMarketplaceActivity,
       goToWallet,
+      refreshListingExpiry,
+      updateMyListingPrice,
+      cancelMyListing,
+      setDemoEscrowOnListing,
       savingsSegment,
       setSavingsSegment,
       mainTab,
@@ -527,8 +613,13 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       navigateToMarketplace,
       marketplaceView,
       openMarketplaceActivity,
+      openMarketplaceListings,
       closeMarketplaceActivity,
       goToWallet,
+      refreshListingExpiry,
+      updateMyListingPrice,
+      cancelMyListing,
+      setDemoEscrowOnListing,
       savingsSegment,
       mainTab,
     ],

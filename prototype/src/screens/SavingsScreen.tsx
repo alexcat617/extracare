@@ -10,6 +10,7 @@ import {
 } from '../lib/marketplaceFilters'
 import { getOfferForListing } from '../store/prototypeStore'
 import { MarketplaceActivityPanel } from './MarketplaceActivityPanel'
+import { MyListingsPanel } from './MyListingsPanel'
 
 export function SavingsScreen() {
   const {
@@ -77,6 +78,8 @@ export function SavingsScreen() {
     savingsSegment === 'marketplace' && marketplaceView === 'browse'
   const marketplaceActivity =
     savingsSegment === 'marketplace' && marketplaceView === 'activity'
+  const marketplaceListings =
+    savingsSegment === 'marketplace' && marketplaceView === 'listings'
 
   return (
     <div className="pb-28">
@@ -147,6 +150,7 @@ export function SavingsScreen() {
 
       <div className="mt-4 space-y-3 px-4">
         {marketplaceActivity ? <MarketplaceActivityPanel /> : null}
+        {marketplaceListings ? <MyListingsPanel /> : null}
 
         {loading && marketplaceBrowse ? (
           <div className="space-y-3" aria-live="polite" aria-busy="true">

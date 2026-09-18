@@ -3,6 +3,7 @@ import type { ConsentMode, DataAction, SellerDemoMode } from '../context/Prototy
 import { usePrototype } from '../context/PrototypeContext'
 import type { DemoPurchaseOutcome } from '../store/prototypeStore'
 import { computeMarketplaceActivity } from '../lib/marketplaceActivity'
+import { getUserPublishedListings } from '../store/listingManageActions'
 import { pendingSellerProposals } from '../store/tradeActions'
 import { BottomSheet } from './BottomSheet'
 
@@ -32,6 +33,7 @@ export function DemoControls() {
     openTradeSellerReview,
     confirmTrade,
     runDataAction,
+    setDemoEscrowOnListing,
   } = usePrototype()
 
   const sellerMode: SellerDemoMode = !state.demoPhoneVerified
@@ -43,6 +45,10 @@ export function DemoControls() {
         : 'eligible'
 
   const activeListings = state.listings.filter((l) => l.status === 'active')
+  const myActiveListings = getUserPublishedListings(state).filter((l) => l.status === 'active')
+  const escrowListingId =
+    state.transfers.find((t) => t.status === 'pending' && t.id.startsWith('ESC-'))?.listingId ??
+    ''
   const sellerTradeInbox = pendingSellerProposals(state).length
   const activity = computeMarketplaceActivity(state)
 
@@ -144,6 +150,19 @@ export function DemoControls() {
             <option value="seller-confirm">Confirm as seller (Jordan)</option>
             <option value="timeout-on">Next seller confirm → timeout</option>
             <option value="timeout-off">Clear trade timeout flag</option>
+          </DemoSelect>
+
+          <DemoSelect
+            label="Listing escrow lock (FLOW-05)"
+            value={escrowListingId}
+            onChange={(v) => setDemoEscrowOnListing(v || null)}
+          >
+            <option value="">No escrow lock</option>
+            {myActiveListings.map((l) => (
+              <option key={l.id} value={l.id}>
+                Lock cancel/edit — {l.id.slice(-6)}
+              </option>
+            ))}
           </DemoSelect>
 
           <DemoSelect

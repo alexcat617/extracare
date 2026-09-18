@@ -10,7 +10,13 @@ const cardClass =
 
 /** Body-only activity dashboard — rendered inside Savings → Marketplace */
 export function MarketplaceActivityPanel() {
-  const { state, openTradeSellerReview, openSheet } = usePrototype()
+  const {
+    state,
+    openTradeSellerReview,
+    openSheet,
+    openMarketplaceListings,
+    tryTransactionalAction,
+  } = usePrototype()
   const [valueMode, setValueMode] = useState<'saved' | 'earned'>('saved')
 
   const activity = useMemo(() => computeMarketplaceActivity(state), [state])
@@ -121,19 +127,25 @@ export function MarketplaceActivityPanel() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => openSheet('listingDetail', row.id)}
+                    onClick={() =>
+                      tryTransactionalAction(() => openSheet('myListingManage', row.id))
+                    }
                     className="shrink-0 rounded-full border border-cvs-gray-border bg-white px-3 py-1 text-xs font-semibold text-black"
                   >
-                    ${row.price.toFixed(2)}
+                    Manage
                   </button>
                 )}
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-3 text-xs text-cvs-gray-muted">
-          Edit, cancel, and history — full My listings in FEAT-04.
-        </p>
+        <button
+          type="button"
+          onClick={openMarketplaceListings}
+          className="mt-3 w-full text-sm font-semibold text-cvs-blue"
+        >
+          Open My listings hub
+        </button>
       </section>
 
       {sellerPending > 0 ? (

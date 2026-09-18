@@ -3,10 +3,16 @@ import { usePrototype } from '../context/PrototypeContext'
 const TABS = [
   { id: 'browse' as const, label: 'Browse' },
   { id: 'activity' as const, label: 'Activity' },
+  { id: 'listings' as const, label: 'Listings' },
 ]
 
 export function MarketplaceTabBar() {
-  const { marketplaceView, closeMarketplaceActivity, openMarketplaceActivity } = usePrototype()
+  const {
+    marketplaceView,
+    closeMarketplaceActivity,
+    openMarketplaceActivity,
+    openMarketplaceListings,
+  } = usePrototype()
 
   return (
     <div
@@ -22,9 +28,11 @@ export function MarketplaceTabBar() {
             type="button"
             role="tab"
             aria-selected={selected}
-            onClick={() =>
-              tab.id === 'activity' ? openMarketplaceActivity() : closeMarketplaceActivity()
-            }
+            onClick={() => {
+              if (tab.id === 'activity') openMarketplaceActivity()
+              else if (tab.id === 'listings') openMarketplaceListings()
+              else closeMarketplaceActivity()
+            }}
             className={`relative min-h-[44px] flex-1 pb-2 text-sm font-semibold transition-colors ${
               selected ? 'text-cvs-blue' : 'text-cvs-gray-muted'
             }`}

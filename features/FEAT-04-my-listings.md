@@ -4,7 +4,7 @@
 |-------|--------|
 | ID | FEAT-04 |
 | Wave | C |
-| Status | `draft` |
+| Status | `building` |
 | Flows | [FLOW-05](../flows/FLOW-05-manage-listings.md) |
 | Depends on | FEAT-02 |
 | Blocks | — |
@@ -63,5 +63,5 @@ Sellers can view, edit price, cancel, and handle expiry for their marketplace li
 
 ## Build handoff
 
-- [ ] Read [FEAT-04-map](./maps/FEAT-04-map.md) + this file + FLOW-05
-- [ ] Implement map nodes (hub → edit / cancel / expiry)
+- [x] Read [FEAT-04-map](./maps/FEAT-04-map.md) + this file + FLOW-05
+- [x] Implement map nodes (hub → edit / cancel / expiry) — prototype `feat/feat-04-my-listings`
