@@ -9,7 +9,9 @@ import {
 } from '../lib/tradeFairness'
 import { getEligibleTradeWalletOffers } from '../store/tradeActions'
 import { getOfferForListing, hasActiveListingForEntitlement } from '../store/prototypeStore'
-import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
+import type { WalletOffer } from '../types/marketplace'
+import { CouponOfferSection } from './CouponOfferSection'
+import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
 import { MobileCheckboxCard } from './MobileFormControls'
 
 export function TradeFlowSheets() {
@@ -18,19 +20,15 @@ export function TradeFlowSheets() {
     activeSheet,
     selectedListingId,
     closeSheet,
+    openSheet,
     submitTradeBundle,
-    openTradeSellerReview,
     respondTradeAsSeller,
-    confirmTrade,
     goToWallet,
     runDataAction,
   } = usePrototype()
 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [message, setMessage] = useState('')
-  const [sellerNote, setSellerNote] = useState('')
   const [bundleError, setBundleError] = useState<string | null>(null)
-
   const activeProposal = state.activeTradeProposalId
     ? state.tradeProposals.find((p) => p.id === state.activeTradeProposalId)
     : undefined
@@ -55,6 +53,13 @@ export function TradeFlowSheets() {
         )
       : null
 
+  useEffect(() => {
+    if (activeSheet !== 'tradeSellerReview') return
+    if (activeProposal?.status === 'completed') {
+      openSheet('tradeSuccess')
+    }
+  }, [activeSheet, activeProposal?.status, openSheet])
+
   const tradePickResetKey = activeSheet === 'tradePickBundle'
     ? `${selectedListingId ?? ''}:${activeProposal?.id ?? ''}:${activeProposal?.status ?? ''}`
     : ''
@@ -69,12 +74,7 @@ export function TradeFlowSheets() {
     lastTradePickResetKey.current = tradePickResetKey
     setSelectedIds([])
     setBundleError(null)
-    setMessage(
-      activeProposal?.status === 'pending_buyer' && activeProposal.sellerNote
-        ? activeProposal.sellerNote
-        : '',
-    )
-  }, [activeSheet, tradePickResetKey, activeProposal?.status, activeProposal?.sellerNote])
+  }, [activeSheet, tradePickResetKey])
 
   const toggleOffer = (id: string, on: boolean) => {
     setBundleError(null)
@@ -97,16 +97,14 @@ export function TradeFlowSheets() {
       setBundleError('Select at least one offer from your wallet.')
       return
     }
-    const result = submitTradeBundle(selectedIds, message)
+    const result = submitTradeBundle(selectedIds)
     if (result === 'error') setBundleError('Couldn’t send proposal. Check your offers.')
   }
 
-  const buyerBundleSummary = (walletIds: string[]) =>
+  const walletOffersForIds = (walletIds: string[]): WalletOffer[] =>
     walletIds
       .map((id) => state.walletOffers.find((w) => w.id === id))
-      .filter(Boolean)
-      .map((w) => w!.title)
-      .join(', ')
+      .filter((w): w is WalletOffer => Boolean(w))
 
   return (
     <>
@@ -117,24 +115,18 @@ export function TradeFlowSheets() {
         onClose={closeSheet}
         footer={
           <div className="space-y-3">
-            <PrimaryButton onClick={handleSendProposal}>
-              {activeProposal?.status === 'pending_buyer' ? 'Resend proposal' : 'Send proposal'}
-            </PrimaryButton>
+            <PrimaryButton onClick={handleSendProposal}>Send proposal</PrimaryButton>
             <OutlineButton onClick={closeSheet}>Cancel</OutlineButton>
           </div>
         }
       >
         <div className="space-y-4 text-sm">
           {listingOffer ? (
-            <p className="font-semibold text-black">
-              You want: {listingOffer.title}{' '}
-              <span className="text-cvs-red">(${listingOffer.savingsAmount} off)</span>
-            </p>
-          ) : null}
-          {activeProposal?.status === 'pending_buyer' && activeProposal.sellerNote ? (
-            <p className="rounded-lg bg-amber-50 p-3 text-amber-950" role="status">
-              Seller asked for different offers: {activeProposal.sellerNote}
-            </p>
+            <CouponOfferSection
+              label="You want this coupon"
+              tone="listing"
+              offers={[listingOffer]}
+            />
           ) : null}
           <p className="text-cvs-gray-muted">
             Pick 1–{MAX_TRADE_BUNDLE} coupons from your On card to offer in exchange. Listed offers
@@ -193,16 +185,6 @@ export function TradeFlowSheets() {
               {fairness.message}
             </p>
           ) : null}
-          <label className="block">
-            <span className="mb-1 block font-semibold text-black">Optional message</span>
-            <textarea
-              className="w-full rounded-xl border border-cvs-gray-border px-3 py-2 text-base text-black"
-              rows={2}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="e.g. Happy to swap if terms match"
-            />
-          </label>
           {bundleError ? (
             <p className="text-sm font-medium text-cvs-red" role="alert">{bundleError}</p>
           ) : null}
@@ -215,17 +197,29 @@ export function TradeFlowSheets() {
         open={activeSheet === 'tradeProposalSent'}
         onClose={closeSheet}
         footer={
-          <div className="space-y-3">
-            <PrimaryButton onClick={() => openTradeSellerReview()}>Review as seller (demo)</PrimaryButton>
-            <OutlineButton onClick={closeSheet}>Back to Marketplace</OutlineButton>
-          </div>
+          <OutlineButton onClick={closeSheet}>Back to Marketplace</OutlineButton>
         }
       >
-        <p className="text-sm text-cvs-gray-muted">
-          The seller will review your bundle. In the live app they’d get a notification. For this
-          prototype, use <strong className="text-black">Prototype → Trade inbox (seller)</strong> or
-          the button below to continue the demo as Jordan (seller).
-        </p>
+        <div className="space-y-4 text-sm">
+          {listingOffer && activeProposal ? (
+            <>
+              <CouponOfferSection
+                label="You're asking for"
+                tone="listing"
+                offers={[listingOffer]}
+              />
+              <CouponOfferSection
+                label="You're offering"
+                tone="bundle"
+                offers={walletOffersForIds(activeProposal.buyerWalletOfferIds)}
+              />
+            </>
+          ) : null}
+          <p className="text-cvs-gray-muted">
+            The seller will review your bundle. When they accept, the swap completes and both of you
+            see the new offers on card.
+          </p>
+        </div>
       </BottomSheet>
 
       <BottomSheet
@@ -234,80 +228,47 @@ export function TradeFlowSheets() {
         open={activeSheet === 'tradeSellerReview'}
         onClose={closeSheet}
         footer={
-          activeProposal ? (
+          activeProposal?.status === 'pending_seller' ? (
             <div className="space-y-3">
-              <PrimaryButton onClick={() => respondTradeAsSeller('accept')}>Accept trade</PrimaryButton>
-              <OutlineButton onClick={() => respondTradeAsSeller('counter', sellerNote || 'Different coupons please')}>
-                Counter — ask for different offers
-              </OutlineButton>
-              <OutlineButton onClick={() => respondTradeAsSeller('decline', sellerNote)}>
+              <PrimaryButton
+                onClick={() => respondTradeAsSeller('accept', activeProposal.id)}
+              >
+                Accept trade
+              </PrimaryButton>
+              <OutlineButton
+                onClick={() => {
+                  respondTradeAsSeller('decline', activeProposal.id)
+                  closeSheet()
+                }}
+              >
                 Decline
               </OutlineButton>
             </div>
-          ) : undefined
+          ) : (
+            <OutlineButton onClick={closeSheet}>Close</OutlineButton>
+          )
         }
       >
         {activeProposal && listingOffer ? (
-          <div className="space-y-3 text-sm">
-            <p>
-              <span className="font-semibold text-black">Your listing:</span> {listingOffer.title} (
-              ${listingOffer.savingsAmount} off)
-            </p>
-            <p>
-              <span className="font-semibold text-black">They offer:</span>{' '}
-              {buyerBundleSummary(activeProposal.buyerWalletOfferIds)}
-            </p>
-            {activeProposal.message ? (
-              <p className="rounded-lg bg-cvs-gray-bg p-3 text-cvs-gray-muted">
-                Buyer message: {activeProposal.message}
-              </p>
-            ) : null}
-            <label className="block">
-              <span className="mb-1 block font-semibold text-black">Note to buyer (optional)</span>
-              <textarea
-                className="w-full rounded-xl border border-cvs-gray-border px-3 py-2 text-base"
-                rows={2}
-                value={sellerNote}
-                onChange={(e) => setSellerNote(e.target.value)}
-              />
-            </label>
+          <div className="space-y-4 text-sm">
+            <CouponOfferSection
+              label="Your listing"
+              tone="listing"
+              offers={[listingOffer]}
+            />
+            <CouponOfferSection
+              label="Buyer offers in exchange"
+              tone="bundle"
+              offers={walletOffersForIds(activeProposal.buyerWalletOfferIds)}
+            />
             <p className="text-xs text-cvs-gray-muted">
-              Accepting locks both sides’ offers until each person confirms the swap.
+              Accepting completes the trade and swaps offers on both cards. No payment — offer-only
+              trade.
             </p>
           </div>
         ) : (
           <p className="text-sm text-cvs-gray-muted">No pending proposal selected.</p>
         )}
-      </BottomSheet>
-
-      <BottomSheet
-        title="Confirm your trade"
-        size="flow"
-        open={activeSheet === 'tradeBuyerConfirm'}
-        onClose={closeSheet}
-        footer={
-          <PrimaryButton onClick={() => confirmTrade('buyer')}>Confirm trade</PrimaryButton>
-        }
-      >
-        <TradeLockSummary state={state} proposal={activeProposal} listingOffer={listingOffer} />
-        <p className="mt-3 text-xs text-cvs-gray-muted">
-          The seller must also confirm before offers swap. No payment — offer-only trade.
-        </p>
-      </BottomSheet>
-
-      <BottomSheet
-        title="Seller confirm (demo)"
-        size="flow"
-        open={activeSheet === 'tradeSellerConfirm'}
-        onClose={closeSheet}
-        footer={
-          <PrimaryButton onClick={() => confirmTrade('seller')}>Confirm as seller</PrimaryButton>
-        }
-      >
-        <p className="mb-3 text-sm text-cvs-gray-muted">
-          Buyer confirmed. Jordan (seller) must confirm to complete the atomic swap.
-        </p>
-        <TradeLockSummary state={state} proposal={activeProposal} listingOffer={listingOffer} />
       </BottomSheet>
 
       <BottomSheet
@@ -325,12 +286,12 @@ export function TradeFlowSheets() {
             >
               View on card
             </PrimaryButton>
-            <OutlineButton onClick={closeSheet}>Continue</OutlineButton>
+            <OutlineButton onClick={closeSheet}>Close</OutlineButton>
           </div>
         }
       >
-        <div className="space-y-3 text-sm text-cvs-gray-muted">
-          <p className="text-base font-semibold text-black">Offers swapped</p>
+        <div className="space-y-4 text-sm text-cvs-gray-muted">
+          <SuccessBanner title="Offers swapped" />
           <p>
             Both sides’ prior offers were voided and re-issued on each card with linked transfer
             IDs.
@@ -343,55 +304,6 @@ export function TradeFlowSheets() {
         </div>
       </BottomSheet>
 
-      <BottomSheet
-        title="Proposal declined"
-        size="flow"
-        open={activeSheet === 'tradeDeclined'}
-        onClose={closeSheet}
-        footer={<PrimaryButton onClick={closeSheet}>OK</PrimaryButton>}
-      >
-        <p className="text-sm text-cvs-gray-muted">
-          The seller declined this trade. Your offers were not locked or transferred.
-        </p>
-      </BottomSheet>
-
-      <BottomSheet
-        title="Trade expired"
-        size="flow"
-        open={activeSheet === 'tradeExpired'}
-        onClose={closeSheet}
-        footer={<PrimaryButton onClick={closeSheet}>OK</PrimaryButton>}
-      >
-        <p className="text-sm text-cvs-gray-muted">
-          The confirmation window ended before both sides confirmed. Locked offers were released and
-          no transfer occurred.
-        </p>
-      </BottomSheet>
     </>
-  )
-}
-
-function TradeLockSummary({
-  state,
-  proposal,
-  listingOffer,
-}: {
-  state: ReturnType<typeof usePrototype>['state']
-  proposal: ReturnType<typeof usePrototype>['state']['tradeProposals'][number] | undefined
-  listingOffer: { title: string; savingsAmount: number } | undefined
-}) {
-  if (!proposal || !listingOffer) return null
-  const giving = proposal.buyerWalletOfferIds
-    .map((id) => state.walletOffers.find((w) => w.id === id))
-    .filter(Boolean)
-  return (
-    <div className="space-y-2 text-sm">
-      <p className="font-semibold text-black">Pending lock</p>
-      <p>
-        You give:{' '}
-        {giving.map((o) => `${o!.title} ($${o!.savingsAmount})`).join(', ') || '—'}
-      </p>
-      <p>You receive: {listingOffer.title} (${listingOffer.savingsAmount} off)</p>
-    </div>
   )
 }

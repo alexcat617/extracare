@@ -21,7 +21,13 @@ Read: `docs/DESIGN-GUARDRAILS.md`, `docs/cvs-app-reference/UI-PATTERNS-AND-IA.md
 - States: empty, loading, blocked, success—not happy-path only.
 - a11y minimum: contrast, focus visible, `aria-label` on icon buttons.
 - Shopper UI checkboxes/radios: `MobileCheckboxCard` / `MobileRadioCard` in `prototype/src/components/MobileFormControls.tsx` (full-width card, ≥56px tap, 24px control)—not bare small inputs.
-- Multi-step buy/sell sheets: `BottomSheet` **`size="flow"`** on every step in `BuyFlowSheets` / `SellFlowSheets` (fixed 72dvh)—no height jumping between steps. Filters use `tall`; one-off gates use `compact`.
+- Multi-step sheets: `BottomSheet` **`size="flow"`** on every step in buy/sell/trade/listing flows (fixed **90dvh**)—no height jumping between steps. Filters/demo panel may use `tall` (same height). Reserve `compact` only for exceptional content-sized sheets.
+- **Bottom sheet motion** (`prototype/src/components/BottomSheet.tsx`): use the shared component for all sheets—do not add per-flow `exiting` state or custom close timers.
+  - **Open from browse** (`previousActiveSheet === null`): slide up + backdrop fade (~`BOTTOM_SHEET_MOTION_MS`, 480ms).
+  - **Dismiss** (Cancel, Close, backdrop, `closeSheet()` → `activeSheet === null`): slide down + fade out (`dismissAnimation="auto"` default).
+  - **Flow step swap** (`openSheet('nextStep')` while another sheet was open): **no** exit or enter animation—instant handoff at full height (buy/sell/trade/listing steps).
+  - **Outside prototype sheet host** (e.g. demo panel): `dismissAnimation="always"`.
+  - Close actions call `onClose` / `closeSheet()`; state change drives `open={false}`—never unmount sheets without going through `BottomSheet` dismiss logic.
 
 ## Demo
 

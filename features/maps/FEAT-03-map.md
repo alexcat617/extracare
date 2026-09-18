@@ -10,7 +10,7 @@
 
 ## Scope
 
-Propose trade on a listing, negotiate, dual confirm, atomic swap of offers.
+Propose trade on a listing, seller accept or decline, atomic swap on accept.
 
 ## Entry points
 
@@ -25,16 +25,9 @@ flowchart TD
   propose --> pickBundle[SelectCounterOffers]
   pickBundle --> send[SendProposal]
   send --> sellerReview[SellerReviewProposal]
-  sellerReview --> decision{AcceptDeclineCounter}
+  sellerReview --> decision{AcceptDecline}
   decision -->|decline| endDecline[ProposalClosed]
-  decision -->|counter| pickBundle
-  decision -->|accept| lock[PendingLockBothBundles]
-  lock --> buyerConfirm[BuyerConfirmTrade]
-  lock --> sellerConfirm[SellerConfirmTrade]
-  buyerConfirm --> bothOK{BothConfirmedInTime}
-  sellerConfirm --> bothOK
-  bothOK -->|no| err_timeout[ReleaseLockExpire]
-  bothOK -->|yes| swap[AtomicSwapOffers]
+  decision -->|accept| swap[AtomicSwapOffers]
   swap --> done[TradeSuccessLinkedTransferIds]
   done -.-> FEAT06[FEAT-06-map]
 ```

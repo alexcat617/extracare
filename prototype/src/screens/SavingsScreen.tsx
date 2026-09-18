@@ -8,8 +8,12 @@ import {
   filterListings,
   type MarketplaceFilters,
 } from '../lib/marketplaceFilters'
+import type { Listing, Offer } from '../types/marketplace'
 import { getOfferForListing } from '../store/prototypeStore'
 import { MarketplaceActivityPanel } from './MarketplaceActivityPanel'
+import { MyListingsPanel } from './MyListingsPanel'
+
+const HIDE_LISTING_ANIMATION_MS = 720
 
 export function SavingsScreen() {
   const {
@@ -20,6 +24,7 @@ export function SavingsScreen() {
     marketplaceView,
     openSheet,
     beginSellFromWallet,
+    hideMarketplaceListing,
     runDataAction,
   } = usePrototype()
   const [loading, setLoading] = useState(false)
@@ -59,6 +64,11 @@ export function SavingsScreen() {
     [state.listings, state.offers, marketplaceFilters],
   )
 
+  const browseListings = useMemo(() => {
+    const hidden = new Set(state.hiddenMarketplaceListingIds)
+    return activeListings.filter((l) => !hidden.has(l.id))
+  }, [activeListings, state.hiddenMarketplaceListingIds])
+
   const filtersActive =
     marketplaceFilters.category !== 'all' ||
     marketplaceFilters.expiresSoon ||
@@ -68,7 +78,7 @@ export function SavingsScreen() {
 
   const dealCount =
     savingsSegment === 'marketplace'
-      ? activeListings.length
+      ? browseListings.length
       : savingsSegment === 'on-card'
         ? state.walletOffers.length
         : state.offers.length
@@ -77,21 +87,18 @@ export function SavingsScreen() {
     savingsSegment === 'marketplace' && marketplaceView === 'browse'
   const marketplaceActivity =
     savingsSegment === 'marketplace' && marketplaceView === 'activity'
+  const marketplaceListings =
+    savingsSegment === 'marketplace' && marketplaceView === 'listings'
 
   return (
     <div className="pb-28">
       <header className="sticky top-0 z-20 border-b border-cvs-gray-border bg-cvs-gray-bg px-4 pb-3 pt-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-black">Savings</h1>
           <div className="flex gap-3">
             <button type="button" className="text-xl" aria-label="Chat with CVS">💬</button>
             <button type="button" className="text-xl" aria-label="Cart">🛒</button>
           </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-full border border-cvs-gray-border bg-white px-4 py-2.5">
-          <span aria-hidden>🔍</span>
-          <span className="text-sm text-cvs-gray-muted">Find deals</span>
-          <button type="button" className="ml-auto text-lg" aria-label="Scan barcode">📷</button>
         </div>
       </header>
 
@@ -147,6 +154,7 @@ export function SavingsScreen() {
 
       <div className="mt-4 space-y-3 px-4">
         {marketplaceActivity ? <MarketplaceActivityPanel /> : null}
+        {marketplaceListings ? <MyListingsPanel /> : null}
 
         {loading && marketplaceBrowse ? (
           <div className="space-y-3" aria-live="polite" aria-busy="true">
@@ -160,33 +168,27 @@ export function SavingsScreen() {
         ) : null}
 
         {!loading && marketplaceBrowse ? (
-          activeListings.length === 0 ? (
+          browseListings.length === 0 ? (
             <EmptyMarketplace
               onReseed={() => runDataAction('reseed')}
-              filtered={filtersActive}
+              filtered={
+                filtersActive ||
+                (activeListings.length > 0 && browseListings.length === 0)
+              }
               onClearFilters={() => setMarketplaceFilters(DEFAULT_MARKETPLACE_FILTERS)}
             />
           ) : (
-            activeListings.map((listing) => {
+            browseListings.map((listing) => {
               const offer = getOfferForListing(state.offers, listing)
               if (!offer) return null
               return (
-                <CouponCard
+                <MarketplaceBrowseCard
                   key={listing.id}
+                  listing={listing}
                   offer={offer}
-                  badge={listing.badge}
-                  marketplace
-                  price={listing.price}
-                  secondaryAction={{
-                    label: 'See terms',
-                    onClick: () => openSheet('listingDetail', listing.id),
-                  }}
-                  primaryAction={{
-                    label: browseReadOnly ? 'Buy (rules required)' : 'Buy',
-                    onClick: () => {
-                      openSheet('listingDetail', listing.id)
-                    },
-                  }}
+                  browseReadOnly={browseReadOnly}
+                  onHide={hideMarketplaceListing}
+                  onBuy={() => openSheet('listingDetail', listing.id)}
                 />
               )
             })
@@ -237,14 +239,63 @@ export function SavingsScreen() {
             ))
         ) : null}
       </div>
+    </div>
+  )
+}
 
-      <button
-        type="button"
-        className="fixed bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-full bg-cvs-blue px-6 py-3 text-sm font-semibold text-white shadow-lg"
-        aria-label="Scan in store"
-      >
-        Scan in store
-      </button>
+function MarketplaceBrowseCard({
+  listing,
+  offer,
+  browseReadOnly,
+  onHide,
+  onBuy,
+}: {
+  listing: Listing
+  offer: Offer
+  browseReadOnly: boolean
+  onHide: (listingId: string) => void
+  onBuy: () => void
+}) {
+  const [hiding, setHiding] = useState(false)
+
+  const handleHide = () => {
+    if (hiding) return
+    setHiding(true)
+    window.setTimeout(() => onHide(listing.id), HIDE_LISTING_ANIMATION_MS)
+  }
+
+  return (
+    <div
+      className={`grid transition-[grid-template-rows,margin] duration-[720ms] ease-in-out motion-reduce:transition-none ${
+        hiding ? 'grid-rows-[0fr] !mt-0' : 'grid-rows-[1fr]'
+      }`}
+      aria-hidden={hiding}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`transition-all duration-[720ms] ease-in-out motion-reduce:transition-none ${
+            hiding
+              ? 'pointer-events-none -translate-y-2 scale-[0.97] opacity-0'
+              : 'translate-y-0 scale-100 opacity-100'
+          }`}
+        >
+          <CouponCard
+            offer={offer}
+            badge={listing.badge}
+            marketplace
+            price={listing.price}
+            secondaryAction={{
+              label: hiding ? 'Hiding…' : 'Hide',
+              onClick: handleHide,
+            }}
+            primaryAction={{
+              label: browseReadOnly ? 'Buy (rules required)' : 'Buy',
+              onClick: onBuy,
+              disabled: hiding,
+            }}
+          />
+        </div>
+      </div>
     </div>
   )
 }

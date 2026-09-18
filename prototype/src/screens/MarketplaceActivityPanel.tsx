@@ -1,20 +1,17 @@
 import { useMemo, useState } from 'react'
-import { PrimaryButton } from '../components/BottomSheet'
 import { ListingStatusChart, WeeklyTrendChart } from '../components/ActivityCharts'
 import { usePrototype } from '../context/PrototypeContext'
 import { computeMarketplaceActivity } from '../lib/marketplaceActivity'
-import { pendingSellerProposals } from '../store/tradeActions'
 
 const cardClass =
   'rounded-[var(--radius-card)] border border-cvs-gray-border bg-white shadow-sm'
 
 /** Body-only activity dashboard — rendered inside Savings → Marketplace */
 export function MarketplaceActivityPanel() {
-  const { state, openTradeSellerReview, openSheet } = usePrototype()
+  const { state } = usePrototype()
   const [valueMode, setValueMode] = useState<'saved' | 'earned'>('saved')
 
   const activity = useMemo(() => computeMarketplaceActivity(state), [state])
-  const sellerPending = pendingSellerProposals(state).length
   const displayValue =
     valueMode === 'saved' ? activity.totalSaved : activity.totalEarned
 
@@ -85,62 +82,6 @@ export function MarketplaceActivityPanel() {
 
       <WeeklyTrendChart days={activity.weeklyActivity} />
       <ListingStatusChart status={activity.listingStatus} />
-
-      <section className={`${cardClass} p-4`}>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-black">Active listings</h2>
-          <span className="text-xs font-medium text-cvs-gray-muted">
-            {activity.userActiveListings.length} shown
-          </span>
-        </div>
-        {activity.userActiveListings.length === 0 ? (
-          <p className="text-sm text-cvs-gray-muted">
-            List from <strong className="text-black">On card → Not for me</strong> to see them here.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {activity.userActiveListings.map((row) => (
-              <li
-                key={row.id}
-                className="flex items-center gap-3 rounded-xl border border-cvs-gray-border/80 bg-cvs-gray-bg/50 px-3 py-3"
-              >
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-lg shadow-sm"
-                  aria-hidden
-                >
-                  🎟️
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-black">{row.title}</p>
-                  <p className="text-xs text-cvs-gray-muted">Marketplace · Active</p>
-                </div>
-                {activity.usesDemoShowcase ? (
-                  <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-bold text-black">
-                    ${row.price.toFixed(2)}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => openSheet('listingDetail', row.id)}
-                    className="shrink-0 rounded-full border border-cvs-gray-border bg-white px-3 py-1 text-xs font-semibold text-black"
-                  >
-                    ${row.price.toFixed(2)}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mt-3 text-xs text-cvs-gray-muted">
-          Edit, cancel, and history — full My listings in FEAT-04.
-        </p>
-      </section>
-
-      {sellerPending > 0 ? (
-        <div className="pt-1">
-          <PrimaryButton onClick={() => openTradeSellerReview()}>Review trade offers</PrimaryButton>
-        </div>
-      ) : null}
     </div>
   )
 }

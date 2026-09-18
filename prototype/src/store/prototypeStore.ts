@@ -1,3 +1,4 @@
+import { mergeMyListingsDemoIntoState, stateHasMyListingsDemo } from '../data/myListingsDemo'
 import {
   createSeedListings,
   createSeedOffers,
@@ -52,6 +53,8 @@ export interface PrototypeState {
   lastTradeTransferIds: [string, string] | null
   /** One-shot: next seller confirm simulates timeout / lock release */
   demoTradeConfirmTimeout: boolean
+  /** Marketplace browse — listing IDs hidden for this member only */
+  hiddenMarketplaceListingIds: string[]
 }
 
 export type DemoPurchaseOutcome = 'none' | 'payment-fail' | 'sold-out' | 'wallet-timeout'
@@ -77,6 +80,7 @@ export const DEFAULT_STATE: PrototypeState = {
   activeTradeProposalId: null,
   lastTradeTransferIds: null,
   demoTradeConfirmTimeout: false,
+  hiddenMarketplaceListingIds: [],
 }
 
 function loadRaw(): Partial<PrototypeState> | null {
@@ -89,14 +93,20 @@ function loadRaw(): Partial<PrototypeState> | null {
   }
 }
 
-export function reseedData(): Pick<PrototypeState, 'offers' | 'listings' | 'walletOffers' | 'transfers'> {
+export function reseedData(): Pick<
+  PrototypeState,
+  'offers' | 'listings' | 'walletOffers' | 'transfers' | 'tradeProposals' | 'sellerHasPublishedBefore'
+> {
   const offers = createSeedOffers()
-  return {
+  const base = {
     offers,
     listings: createSeedListings(offers),
     walletOffers: createSeedWalletOffers(),
-    transfers: [],
+    transfers: [] as Transfer[],
+    tradeProposals: [] as TradeProposal[],
+    sellerHasPublishedBefore: false,
   }
+  return mergeMyListingsDemoIntoState(base)
 }
 
 /** Full marketplace + wallet seed; keeps consent/ExtraCare/demo scenario flags */
@@ -110,19 +120,15 @@ export function reseedListingsAndWalletState(prev: PrototypeState): PrototypeSta
     walletOffers: [...seed.walletOffers, ...purchased],
     transfers: prev.transfers,
     lastPurchaseTransferId: prev.lastPurchaseTransferId,
-    tradeProposals: [],
+    tradeProposals: seed.tradeProposals ?? [],
     activeTradeProposalId: null,
     lastTradeTransferIds: null,
     demoTradeConfirmTimeout: false,
+    sellerHasPublishedBefore: seed.sellerHasPublishedBefore ?? prev.sellerHasPublishedBefore,
   }
 }
 
-export function loadState(): PrototypeState {
-  const saved = loadRaw()
-  const seed = reseedData()
-  if (!saved) {
-    return { ...DEFAULT_STATE, ...seed }
-  }
+function stateFromSaved(saved: Partial<PrototypeState>, seed: ReturnType<typeof reseedData>): PrototypeState {
   return {
     ...DEFAULT_STATE,
     ...seed,
@@ -143,12 +149,31 @@ export function loadState(): PrototypeState {
     demoPhoneVerified: saved.demoPhoneVerified ?? DEFAULT_STATE.demoPhoneVerified,
     demoSellerListingCapReached:
       saved.demoSellerListingCapReached ?? DEFAULT_STATE.demoSellerListingCapReached,
-    sellerHasPublishedBefore: saved.sellerHasPublishedBefore ?? false,
-    tradeProposals: saved.tradeProposals ?? [],
+    sellerHasPublishedBefore:
+      saved.sellerHasPublishedBefore ?? seed.sellerHasPublishedBefore ?? false,
+    tradeProposals: saved.tradeProposals?.length ? saved.tradeProposals : seed.tradeProposals,
     activeTradeProposalId: saved.activeTradeProposalId ?? null,
     lastTradeTransferIds: saved.lastTradeTransferIds ?? null,
     demoTradeConfirmTimeout: saved.demoTradeConfirmTimeout ?? false,
+    hiddenMarketplaceListingIds: saved.hiddenMarketplaceListingIds ?? [],
   }
+}
+
+export function applyMyListingsDemoSeed(state: PrototypeState): PrototypeState {
+  const next = mergeMyListingsDemoIntoState(state)
+  persistState(next)
+  return next
+}
+
+export function loadState(): PrototypeState {
+  const seed = reseedData()
+  const saved = loadRaw()
+  let state = saved ? stateFromSaved(saved, seed) : { ...DEFAULT_STATE, ...seed }
+  if (!stateHasMyListingsDemo(state.listings)) {
+    state = mergeMyListingsDemoIntoState(state)
+    persistState(state)
+  }
+  return state
 }
 
 function migrateDemoOutcome(saved: Partial<PrototypeState>): DemoPurchaseOutcome {
@@ -184,8 +209,6 @@ export function resetAllPrototypeData(): PrototypeState {
     demoSellerAccountDays: 14,
     demoPhoneVerified: true,
     demoSellerListingCapReached: false,
-    sellerHasPublishedBefore: false,
-    tradeProposals: [],
     activeTradeProposalId: null,
     lastTradeTransferIds: null,
     demoTradeConfirmTimeout: false,

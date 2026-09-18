@@ -30,7 +30,7 @@
 ## Happy path — respond to trade proposal
 
 1. User opens pending proposal on a listing.
-2. User accept / decline / counter → continues in [FLOW-03](./FLOW-03-trade.md).
+2. User accept / decline → continues in [FLOW-03](./FLOW-03-trade.md).
 
 ## Happy path — expiry
 

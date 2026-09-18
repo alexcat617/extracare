@@ -19,13 +19,13 @@ Two members can propose, negotiate, and confirm a **trade** of offers with dual-
 ## Persona lens
 
 - **P2:** Propose trade when cash buy isn’t ideal; fairness hint optional.
-- **P1:** Review proposals on their listing; dual confirm before losing offer.
+- **P1:** Review proposals on their listing; accept completes the swap.
 
 ## User stories
 
 - (P2) As **Sam**, I want to **propose a trade** on a listing so that I swap a coupon I don’t need instead of paying cash.
-- (P1) As **Jordan**, I want to **review, accept, decline, or counter** trade proposals on my listing.
-- (P1 + P2) As **both parties**, I want **dual confirm** so that neither side loses offers without agreement.
+- (P1) As **Jordan**, I want to **review, accept, or decline** trade proposals on my listing.
+- (P1 + P2) As **both parties**, I want a clear **success** state when the seller accepts so we know the swap completed.
 
 ## Requirements
 
@@ -33,18 +33,16 @@ Two members can propose, negotiate, and confirm a **trade** of offers with dual-
 |----|-------------|-------|
 | REQ-03-01 | From listing detail, **Propose trade** opens bundle picker (1–n wallet offers). | FLOW-03 steps 1–3 |
 | REQ-03-02 | Show **value fairness hint** vs listing (non-blocking). | FLOW-03 step 3 |
-| REQ-03-03 | Seller receives proposal; can accept, decline, counter. | FLOW-03 steps 5–6 |
-| REQ-03-04 | On agreement, **pending lock** both bundles; each user **Confirm trade**. | FLOW-03 steps 7–8 |
-| REQ-03-05 | On dual confirm, **atomic swap** (void both, cross-issue); linked transfer IDs. | FLOW-03 step 9; FLOWS rule 1 |
-| REQ-03-06 | **Timeout** on lock releases offers; no transfer. | FLOW-03 decision |
-| REQ-03-07 | Offers in active listing elsewhere cannot join bundle until delisted. | FLOW-03 failure |
-| REQ-03-08 | Optional **trade-preferred** listing type from sell flow. | FLOW-03 open path |
+| REQ-03-03 | Seller receives proposal; can accept or decline. | FLOW-03 steps 5–6 |
+| REQ-03-04 | On seller **accept**, **atomic swap** (void both, cross-issue); linked transfer IDs; **success** confirmation. | FLOW-03 steps 7–8; FLOWS rule 1 |
+| REQ-03-05 | Offers in active listing elsewhere cannot join bundle until delisted. | FLOW-03 failure |
+| REQ-03-06 | Optional **trade-preferred** listing type from sell flow. | FLOW-03 open path |
 
 ## Acceptance criteria
 
 - (P2) **Given** a listing and eligible wallet offers, **when** Sam sends proposal, **then** Jordan sees pending proposal.
-- (P1 + P2) **Given** agreement, **when** only one party confirms, **then** no transfer occurs.
-- (P1 + P2) **Given** both confirm within window, **when** swap completes, **then** each wallet shows received offers and prior offers are gone.
+- (P1) **Given** a pending proposal, **when** Jordan accepts, **then** swap completes and **Trade complete** success is shown.
+- (P1 + P2) **When** swap completes, **then** each wallet shows received offers and prior offers are gone.
 
 ## Out of scope
 

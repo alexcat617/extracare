@@ -87,145 +87,37 @@ export function applyTradeProposalSent(
 export function sellerRespondTrade(
   state: PrototypeState,
   proposalId: string,
-  action: 'accept' | 'decline' | 'counter',
-  sellerNote?: string,
+  action: 'accept' | 'decline',
 ): { ok: true; state: PrototypeState } | { ok: false; error: TradeError } {
   const proposal = state.tradeProposals.find((p) => p.id === proposalId)
   if (!proposal) return { ok: false, error: 'not-found' }
-  if (proposal.status !== 'pending_seller') return { ok: false, error: 'wrong-status' }
-
   const now = new Date().toISOString()
 
   if (action === 'decline') {
+    if (proposal.status !== 'pending_seller' && proposal.status !== 'awaiting_confirm') {
+      return { ok: false, error: 'wrong-status' }
+    }
     return {
       ok: true,
       state: {
         ...state,
         tradeProposals: state.tradeProposals.map((p) =>
           p.id === proposalId
-            ? { ...p, status: 'declined' as const, sellerNote, updatedAt: now }
+            ? { ...p, status: 'declined' as const, updatedAt: now }
             : p,
         ),
       },
     }
   }
 
-  if (action === 'counter') {
-    return {
-      ok: true,
-      state: {
-        ...state,
-        tradeProposals: state.tradeProposals.map((p) =>
-          p.id === proposalId
-            ? {
-                ...p,
-                status: 'pending_buyer' as const,
-                sellerNote: sellerNote?.trim() || 'Seller asked for different offers.',
-                updatedAt: now,
-              }
-            : p,
-        ),
-      },
-    }
+  if (proposal.status !== 'pending_seller' && proposal.status !== 'awaiting_confirm') {
+    return { ok: false, error: 'wrong-status' }
   }
 
-  const listing = state.listings.find((l) => l.id === proposal.listingId)
-  if (!listing || listing.status !== 'active') return { ok: false, error: 'inactive' }
+  const swap = executeTradeSwap(state, { ...proposal, updatedAt: now })
+  if (!swap.ok) return { ok: false, error: swap.error }
 
-  const walletOffers = state.walletOffers.map((w) =>
-    proposal.buyerWalletOfferIds.includes(w.id)
-      ? { ...w, status: 'reserved' as const }
-      : w,
-  )
-
-  return {
-    ok: true,
-    state: {
-      ...state,
-      walletOffers,
-      tradeProposals: state.tradeProposals.map((p) =>
-        p.id === proposalId
-          ? {
-              ...p,
-              status: 'awaiting_confirm' as const,
-              sellerNote: sellerNote?.trim() || undefined,
-              updatedAt: now,
-            }
-          : p,
-      ),
-    },
-  }
-}
-
-export function releaseTradeLock(state: PrototypeState, proposal: TradeProposal): PrototypeState {
-  const walletOffers = state.walletOffers.map((w) =>
-    proposal.buyerWalletOfferIds.includes(w.id) && w.status === 'reserved'
-      ? { ...w, status: 'active' as const }
-      : w,
-  )
-  return { ...state, walletOffers }
-}
-
-export function confirmTradeParty(
-  state: PrototypeState,
-  proposalId: string,
-  party: 'buyer' | 'seller',
-): { ok: true; state: PrototypeState; completed: boolean } | { ok: false; error: TradeError } {
-  const proposal = state.tradeProposals.find((p) => p.id === proposalId)
-  if (!proposal) return { ok: false, error: 'not-found' }
-  if (proposal.status !== 'awaiting_confirm') return { ok: false, error: 'wrong-status' }
-
-  if (state.demoTradeConfirmTimeout && party === 'seller') {
-    const released = releaseTradeLock(state, proposal)
-    return {
-      ok: true,
-      state: {
-        ...released,
-        tradeProposals: released.tradeProposals.map((p) =>
-          p.id === proposalId ? { ...p, status: 'expired' as const, updatedAt: new Date().toISOString() } : p,
-        ),
-        demoTradeConfirmTimeout: false,
-      },
-      completed: false,
-    }
-  }
-
-  const now = new Date().toISOString()
-  const nextProposal: TradeProposal = {
-    ...proposal,
-    buyerConfirmedAt:
-      party === 'buyer' ? now : proposal.buyerConfirmedAt,
-    sellerConfirmedAt:
-      party === 'seller' ? now : proposal.sellerConfirmedAt,
-    updatedAt: now,
-  }
-
-  const buyerDone = Boolean(nextProposal.buyerConfirmedAt)
-  const sellerDone = Boolean(nextProposal.sellerConfirmedAt)
-
-  if (!buyerDone || !sellerDone) {
-    return {
-      ok: true,
-      completed: false,
-      state: {
-        ...state,
-        tradeProposals: state.tradeProposals.map((p) =>
-          p.id === proposalId ? nextProposal : p,
-        ),
-      },
-    }
-  }
-
-  const swap = executeTradeSwap(state, nextProposal)
-  if (!swap.ok) {
-    return { ok: false, error: swap.error }
-  }
-
-  return {
-    ok: true,
-    completed: true,
-    state: swap.state,
-  }
+  return { ok: true, state: swap.state }
 }
 
 function executeTradeSwap(
@@ -316,51 +208,9 @@ function executeTradeSwap(
   }
 }
 
-export function updateBuyerTradeBundle(
-  state: PrototypeState,
-  proposalId: string,
-  buyerWalletOfferIds: string[],
-  message?: string,
-): { ok: true; state: PrototypeState } | { ok: false; error: TradeError } {
-  const proposal = state.tradeProposals.find((p) => p.id === proposalId)
-  if (!proposal) return { ok: false, error: 'not-found' }
-  if (proposal.status !== 'pending_buyer') return { ok: false, error: 'wrong-status' }
-
-  const created = createTradeProposal(state, proposal.listingId, buyerWalletOfferIds, message)
-  if (!created.ok) return created
-
-  const now = new Date().toISOString()
-  const updated: TradeProposal = {
-    ...created.proposal,
-    id: proposal.id,
-    createdAt: proposal.createdAt,
-    updatedAt: now,
-    status: 'pending_seller',
-    sellerNote: undefined,
-  }
-
-  return {
-    ok: true,
-    state: {
-      ...state,
-      tradeProposals: state.tradeProposals.map((p) => (p.id === proposalId ? updated : p)),
-      activeTradeProposalId: proposalId,
-    },
-  }
-}
-
 export function pendingSellerProposals(state: PrototypeState): TradeProposal[] {
   return state.tradeProposals.filter(
     (p) => p.status === 'pending_seller' && p.sellerMemberId === MOCK_SELLER_ID,
   )
 }
 
-export function pendingBuyerProposals(state: PrototypeState): TradeProposal[] {
-  return state.tradeProposals.filter(
-    (p) => p.status === 'pending_buyer' && p.buyerMemberId === MOCK_MEMBER_ID,
-  )
-}
-
-export function awaitingConfirmProposal(state: PrototypeState): TradeProposal | undefined {
-  return state.tradeProposals.find((p) => p.status === 'awaiting_confirm')
-}
