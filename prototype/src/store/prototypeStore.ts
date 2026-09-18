@@ -1,4 +1,5 @@
 import { hasActivityTrendSeed, mergeActivityTrendSeed } from '../data/activityTrendSeed'
+import { clearWelcomeSeen } from '../lib/welcomeGate'
 import { mergeMyListingsDemoIntoState, stateHasMyListingsDemo } from '../data/myListingsDemo'
 import {
   createSeedListings,
@@ -252,6 +253,7 @@ export function resetAllPrototypeData(): PrototypeState {
     lastTradeTransferIds: null,
     demoTradeConfirmTimeout: false,
   }
+  clearWelcomeSeen()
   persistState(fresh)
   return fresh
 }

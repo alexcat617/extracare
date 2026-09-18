@@ -2,6 +2,7 @@ import { BottomNav } from './components/BottomNav'
 import { DemoControls } from './components/DemoControls'
 import { SheetHost } from './components/Sheets'
 import { PrototypeProvider, usePrototype } from './context/PrototypeContext'
+import { HomeWelcomeScreen } from './screens/HomeWelcomeScreen'
 import { OrdersScreen } from './screens/OrdersScreen'
 import { PlaceholderTab } from './screens/PlaceholderTab'
 import { SavingsScreen } from './screens/SavingsScreen'
@@ -11,7 +12,9 @@ function AppFrame() {
 
   return (
     <div className="mx-auto min-h-full max-w-[430px] bg-cvs-gray-bg shadow-xl">
-      {mainTab === 'savings' ? (
+      {mainTab === 'home' ? (
+        <HomeWelcomeScreen onStart={() => setMainTab('savings')} />
+      ) : mainTab === 'savings' ? (
         <SavingsScreen />
       ) : mainTab === 'orders' ? (
         <OrdersScreen />

@@ -44,8 +44,29 @@ body {
   animation: clip-btn-success 900ms ease-in-out;
 }
 
+@keyframes welcome-logo-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-welcome-logo-in {
+  animation: welcome-logo-in 480ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-clip-btn-success {
     animation: none;
+  }
+
+  .animate-welcome-logo-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }

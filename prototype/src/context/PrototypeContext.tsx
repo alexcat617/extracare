@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { hasSeenWelcome } from '../lib/welcomeGate'
 import {
   clearConsent,
   loadState,
@@ -178,7 +179,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
   const [selectedWalletOfferId, setSelectedWalletOfferId] = useState<string | null>(null)
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null)
-  const [mainTab, setMainTab] = useState<MainTab>('savings')
+  const [mainTab, setMainTab] = useState<MainTab>(() =>
+    hasSeenWelcome() ? 'savings' : 'home',
+  )
   const [savingsSegment, setSavingsSegment] = useState<SavingsSegment>('all')
   const [marketplaceView, setMarketplaceView] = useState<MarketplaceView>('browse')
 
@@ -343,6 +346,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
         setState(fresh)
         setActiveSheet(null)
         setSavingsSegment('all')
+        setMainTab('home')
         return
       }
       if (action === 'open-marketplace') {
