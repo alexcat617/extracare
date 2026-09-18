@@ -51,6 +51,7 @@ import {
   type NotInWalletDisputeOutcome,
   type TermsDisputeOutcome,
 } from '../store/trustActions'
+import { clipCatalogOfferToWallet } from '../store/clipActions'
 
 export type SheetId =
   | 'consent'
@@ -145,6 +146,7 @@ interface PrototypeContextValue {
   ) => 'success' | 'price' | 'blocked' | 'error'
   cancelMyListing: (listingId: string) => 'success' | 'blocked' | 'error'
   hideMarketplaceListing: (listingId: string) => void
+  clipOfferToCard: (catalogOfferId: string) => void
   openPurchaseStatus: (transferId: string) => void
   runDisputeWalletCheck: (transferId: string) => NotInWalletDisputeOutcome
   runDisputeTermsResolution: (transferId: string) => TermsDisputeOutcome
@@ -537,6 +539,13 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     [patchState],
   )
 
+  const clipOfferToCard = useCallback(
+    (catalogOfferId: string) => {
+      patchState((prev) => clipCatalogOfferToWallet(prev, catalogOfferId))
+    },
+    [patchState],
+  )
+
   const beginSellFromWallet = useCallback(
     (walletOfferId: string) => {
       setSelectedWalletOfferId(walletOfferId)
@@ -685,6 +694,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       updateMyListingPrice,
       cancelMyListing,
       hideMarketplaceListing,
+      clipOfferToCard,
       openPurchaseStatus,
       runDisputeWalletCheck,
       runDisputeTermsResolution,
@@ -730,6 +740,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       updateMyListingPrice,
       cancelMyListing,
       hideMarketplaceListing,
+      clipOfferToCard,
       openPurchaseStatus,
       runDisputeWalletCheck,
       runDisputeTermsResolution,

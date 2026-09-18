@@ -27,6 +27,26 @@ export function findWalletOfferForTransfer(
   return walletOffers.find((w) => w.transferId === transferId)
 }
 
+/** Wallet offer received via completed trade swap (not cash purchase or clip). */
+export function isTradedWalletOffer(
+  transfers: Transfer[],
+  offer: WalletOffer,
+): boolean {
+  if (!offer.transferId) return false
+  const transfer = transfers.find((t) => t.id === offer.transferId)
+  return Boolean(transfer?.tradeProposalId)
+}
+
+/** Wallet offer received via protected cash purchase (not trade or clip). */
+export function isPurchasedWalletOffer(
+  transfers: Transfer[],
+  offer: WalletOffer,
+): boolean {
+  if (!offer.transferId) return false
+  const transfer = transfers.find((t) => t.id === offer.transferId)
+  return Boolean(transfer && !transfer.tradeProposalId)
+}
+
 export function buildEscrowTimeline(
   transfer: Transfer,
   walletOffers: WalletOffer[],
