@@ -23,7 +23,7 @@ For a C2C coupon marketplace, members need a **light operational surface** (not 
 | Value | Total saved / total earned | Toggle (buyer vs seller) |
 | Trust | Fulfillment % & rating | Text badge (not color-only) |
 
-**Mocks:** Trust defaults to 99% / 4.9★ unless a disputed transfer exists in prototype state. Escrow pending is $0 unless extended later. **Live:** listing counts, trade pending, saved/earned from [`marketplaceActivity.ts`](../prototype/src/lib/marketplaceActivity.ts).
+**Mocks:** Trust defaults to 99% / 4.9★ unless a disputed transfer exists in prototype state. Escrow pending is $0 unless extended later. **Live:** listing counts, trade pending, saved/earned totals, listing status breakdown, transfer bumps on the 7-day chart. **Charts:** SVG **line trend** (saved vs earned) uses showcase series plus real `transfers` when you transact; stacked bar = listing statuses. Empty wallet → full **sample portfolio** banner on Activity.
 
 ## Relationship to FEAT-04
 

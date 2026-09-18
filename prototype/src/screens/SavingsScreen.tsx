@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CouponCard } from '../components/CouponCard'
-import { MarketplaceFilterSheet } from '../components/MarketplaceFilterSheet'
+import { MarketplaceTabBar } from '../components/MarketplaceTabBar'
 import { SegmentBar } from '../components/SegmentBar'
 import { usePrototype } from '../context/PrototypeContext'
 import {
@@ -9,7 +9,7 @@ import {
   type MarketplaceFilters,
 } from '../lib/marketplaceFilters'
 import { getOfferForListing } from '../store/prototypeStore'
-import { MarketplaceActivityScreen } from './MarketplaceActivityScreen'
+import { MarketplaceActivityPanel } from './MarketplaceActivityPanel'
 
 export function SavingsScreen() {
   const {
@@ -18,13 +18,11 @@ export function SavingsScreen() {
     setSavingsSegment,
     navigateToMarketplace,
     marketplaceView,
-    openMarketplaceActivity,
     openSheet,
     beginSellFromWallet,
     runDataAction,
   } = usePrototype()
   const [loading, setLoading] = useState(false)
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [marketplaceFilters, setMarketplaceFilters] = useState<MarketplaceFilters>(
     DEFAULT_MARKETPLACE_FILTERS,
   )
@@ -75,9 +73,10 @@ export function SavingsScreen() {
         ? state.walletOffers.length
         : state.offers.length
 
-  if (savingsSegment === 'marketplace' && marketplaceView === 'activity') {
-    return <MarketplaceActivityScreen />
-  }
+  const marketplaceBrowse =
+    savingsSegment === 'marketplace' && marketplaceView === 'browse'
+  const marketplaceActivity =
+    savingsSegment === 'marketplace' && marketplaceView === 'activity'
 
   return (
     <div className="pb-28">
@@ -112,47 +111,23 @@ export function SavingsScreen() {
           }}
         />
 
-        <div className="mt-3 flex items-center justify-between gap-2">
-          {savingsSegment === 'marketplace' ? (
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(true)}
-              className={`rounded-full border-2 px-4 py-1.5 text-sm font-semibold ${
-                filtersActive
-                  ? 'border-cvs-blue bg-cvs-blue text-white'
-                  : 'border-cvs-blue text-cvs-blue'
-              }`}
-            >
-              Sort &amp; refine
-            </button>
-          ) : (
+        {savingsSegment === 'marketplace' ? (
+          <>
+            <MarketplaceTabBar />
+          </>
+        ) : (
+          <div className="mt-3 flex items-center justify-between gap-2">
             <button
               type="button"
               className="rounded-full border-2 border-cvs-blue px-4 py-1.5 text-sm font-semibold text-cvs-blue"
             >
               Sort &amp; refine
             </button>
-          )}
-          {savingsSegment === 'marketplace' ? (
-            <button
-              type="button"
-              onClick={openMarketplaceActivity}
-              className="text-sm font-semibold text-cvs-blue"
-              aria-label="Open marketplace activity"
-            >
-              Activity
-            </button>
-          ) : (
             <span className="text-sm text-cvs-gray-muted">
               {dealCount} deal{dealCount === 1 ? '' : 's'}
             </span>
-          )}
-          {savingsSegment === 'marketplace' ? (
-            <span className="text-sm text-cvs-gray-muted">
-              {dealCount} deal{dealCount === 1 ? '' : 's'}
-            </span>
-          ) : null}
-        </div>
+          </div>
+        )}
 
         {browseReadOnly && savingsSegment === 'marketplace' ? (
           <p
@@ -171,7 +146,9 @@ export function SavingsScreen() {
       </div>
 
       <div className="mt-4 space-y-3 px-4">
-        {loading && savingsSegment === 'marketplace' ? (
+        {marketplaceActivity ? <MarketplaceActivityPanel /> : null}
+
+        {loading && marketplaceBrowse ? (
           <div className="space-y-3" aria-live="polite" aria-busy="true">
             {[1, 2, 3].map((i) => (
               <div
@@ -182,7 +159,7 @@ export function SavingsScreen() {
           </div>
         ) : null}
 
-        {!loading && savingsSegment === 'marketplace' ? (
+        {!loading && marketplaceBrowse ? (
           activeListings.length === 0 ? (
             <EmptyMarketplace
               onReseed={() => runDataAction('reseed')}
@@ -260,13 +237,6 @@ export function SavingsScreen() {
             ))
         ) : null}
       </div>
-
-      <MarketplaceFilterSheet
-        open={filtersOpen}
-        filters={marketplaceFilters}
-        onChange={setMarketplaceFilters}
-        onClose={() => setFiltersOpen(false)}
-      />
 
       <button
         type="button"
