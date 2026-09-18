@@ -22,6 +22,12 @@ export interface PrototypeState {
   lastPurchaseTransferId: string | null
   /** FEAT-01: one-shot outcome for the next Pay tap (then resets to none) */
   demoNextPurchaseOutcome: DemoPurchaseOutcome
+  /** FEAT-02 seller eligibility mocks */
+  demoSellerEligible: boolean
+  demoSellerAccountDays: number
+  demoPhoneVerified: boolean
+  demoSellerListingCapReached: boolean
+  sellerHasPublishedBefore: boolean
 }
 
 export type DemoPurchaseOutcome = 'none' | 'payment-fail' | 'sold-out' | 'wallet-timeout'
@@ -38,6 +44,11 @@ export const DEFAULT_STATE: PrototypeState = {
   transfers: [],
   lastPurchaseTransferId: null,
   demoNextPurchaseOutcome: 'none',
+  demoSellerEligible: true,
+  demoSellerAccountDays: 14,
+  demoPhoneVerified: true,
+  demoSellerListingCapReached: false,
+  sellerHasPublishedBefore: false,
 }
 
 function loadRaw(): Partial<PrototypeState> | null {
@@ -63,13 +74,14 @@ export function reseedData(): Pick<PrototypeState, 'offers' | 'listings' | 'wall
 /** Full marketplace + wallet seed; keeps consent/ExtraCare/demo scenario flags */
 export function reseedListingsAndWalletState(prev: PrototypeState): PrototypeState {
   const seed = reseedData()
+  const purchased = prev.walletOffers.filter((w) => w.transferId)
   return {
     ...prev,
     offers: seed.offers,
     listings: seed.listings,
-    walletOffers: seed.walletOffers,
-    transfers: [],
-    lastPurchaseTransferId: null,
+    walletOffers: [...seed.walletOffers, ...purchased],
+    transfers: prev.transfers,
+    lastPurchaseTransferId: prev.lastPurchaseTransferId,
   }
 }
 
@@ -92,6 +104,12 @@ export function loadState(): PrototypeState {
     transfers: saved.transfers ?? [],
     lastPurchaseTransferId: saved.lastPurchaseTransferId ?? null,
     demoNextPurchaseOutcome: migrateDemoOutcome(saved),
+    demoSellerEligible: saved.demoSellerEligible ?? DEFAULT_STATE.demoSellerEligible,
+    demoSellerAccountDays: saved.demoSellerAccountDays ?? DEFAULT_STATE.demoSellerAccountDays,
+    demoPhoneVerified: saved.demoPhoneVerified ?? DEFAULT_STATE.demoPhoneVerified,
+    demoSellerListingCapReached:
+      saved.demoSellerListingCapReached ?? DEFAULT_STATE.demoSellerListingCapReached,
+    sellerHasPublishedBefore: saved.sellerHasPublishedBefore ?? false,
   }
 }
 
@@ -124,6 +142,11 @@ export function resetAllPrototypeData(): PrototypeState {
     offline: false,
     lastPurchaseTransferId: null,
     demoNextPurchaseOutcome: 'none',
+    demoSellerEligible: true,
+    demoSellerAccountDays: 14,
+    demoPhoneVerified: true,
+    demoSellerListingCapReached: false,
+    sellerHasPublishedBefore: false,
   }
   persistState(fresh)
   return fresh

@@ -1,4 +1,9 @@
-import { createSeedListings, createSeedOffers, MOCK_MEMBER_ID } from '../data/seed'
+import {
+  createSeedListings,
+  createSeedOffers,
+  createSeedWalletOffers,
+  MOCK_MEMBER_ID,
+} from '../data/seed'
 import type { Listing, Transfer, WalletOffer } from '../types/marketplace'
 import { getOfferForListing, type PrototypeState } from './prototypeStore'
 
@@ -88,12 +93,12 @@ export function applyPurchaseSuccess(
 
 export function clearWalletPurchases(state: PrototypeState): PrototypeState {
   const offers = createSeedOffers()
-  const seedWallet = state.walletOffers.filter((w) => !w.transferId)
+  const purchased = state.walletOffers.filter((w) => w.transferId)
   return {
     ...state,
     offers,
     listings: createSeedListings(offers),
-    walletOffers: seedWallet,
+    walletOffers: [...createSeedWalletOffers(), ...purchased],
     transfers: [],
     lastPurchaseTransferId: null,
     demoNextPurchaseOutcome: 'none',

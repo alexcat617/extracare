@@ -55,6 +55,7 @@ export function BuyFlowSheets() {
     <>
       <BottomSheet
         title={listingOffer?.title ?? 'Listing'}
+        size="flow"
         open={activeSheet === 'listingDetail'}
         onClose={closeSheet}
         footer={
@@ -118,6 +119,7 @@ export function BuyFlowSheets() {
 
       <BottomSheet
         title="Buy now"
+        size="flow"
         open={activeSheet === 'buyConfirm'}
         onClose={closeSheet}
         footer={
@@ -174,6 +176,7 @@ export function BuyFlowSheets() {
 
       <BottomSheet
         title="Offer in your wallet"
+        size="flow"
         open={activeSheet === 'buySuccess'}
         onClose={closeSheet}
         footer={
@@ -205,6 +208,7 @@ export function BuyFlowSheets() {
 
       <BottomSheet
         title="Payment didn’t go through"
+        size="flow"
         open={activeSheet === 'buyPaymentFailed'}
         onClose={closeSheet}
         footer={
@@ -222,6 +226,7 @@ export function BuyFlowSheets() {
 
       <BottomSheet
         title="No longer available"
+        size="flow"
         open={activeSheet === 'buyUnavailable'}
         onClose={closeSheet}
         footer={<PrimaryButton onClick={closeSheet}>Browse marketplace</PrimaryButton>}
@@ -233,6 +238,7 @@ export function BuyFlowSheets() {
 
       <BottomSheet
         title="Purchase refunded"
+        size="flow"
         open={activeSheet === 'buyRefundTimeout'}
         onClose={closeSheet}
         footer={<PrimaryButton onClick={closeSheet}>OK</PrimaryButton>}
@@ -246,6 +252,7 @@ export function BuyFlowSheets() {
 
       <BottomSheet
         title="Propose trade"
+        size="flow"
         open={activeSheet === 'feat03TradeStub'}
         onClose={closeSheet}
         footer={<OutlineButton onClick={closeSheet}>Close</OutlineButton>}
