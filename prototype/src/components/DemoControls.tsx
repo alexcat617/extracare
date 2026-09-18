@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import type { ConsentMode, DataAction, SellerDemoMode } from '../context/PrototypeContext'
 import { usePrototype } from '../context/PrototypeContext'
 import type { DemoPurchaseOutcome } from '../store/prototypeStore'
+import { computeMarketplaceActivity } from '../lib/marketplaceActivity'
 import { pendingSellerProposals } from '../store/tradeActions'
 import { BottomSheet } from './BottomSheet'
 
@@ -43,6 +44,7 @@ export function DemoControls() {
 
   const activeListings = state.listings.filter((l) => l.status === 'active')
   const sellerTradeInbox = pendingSellerProposals(state).length
+  const activity = computeMarketplaceActivity(state)
 
   const handleDataAction = (value: string) => {
     if (!value) return
@@ -168,7 +170,8 @@ export function DemoControls() {
           </DemoSelect>
 
           <p className="text-xs text-cvs-gray-muted">
-            {activeListings.length} active listings · {state.walletOffers.length} on wallet ·
+            {activeListings.length} marketplace listings · {activity.activeListings} yours active ·{' '}
+            {activity.pendingTradeOffers} trade pending · {state.walletOffers.length} on wallet ·
             Next buy:{' '}
             <strong className="text-black">
               {state.demoNextPurchaseOutcome === 'none'

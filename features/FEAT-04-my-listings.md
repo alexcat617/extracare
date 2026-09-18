@@ -52,6 +52,8 @@ Sellers can view, edit price, cancel, and handle expiry for their marketplace li
 
 - FEAT-02 listings
 - FEAT-03 for pending trade UI (can stub until Wave B)
+- **Related:** [Marketplace activity hub](../docs/MARKETPLACE-ACTIVITY-HUB.md) — v1 metrics + listings preview; this FEAT adds full manage flows (edit/cancel/history).
+- **Related:** [Marketplace activity hub](../docs/MARKETPLACE-ACTIVITY-HUB.md) — v1 metrics + listings preview; this FEAT adds full manage flows (edit/cancel/history).
 
 ## Decisions
 

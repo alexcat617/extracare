@@ -9,6 +9,7 @@ import {
   type MarketplaceFilters,
 } from '../lib/marketplaceFilters'
 import { getOfferForListing } from '../store/prototypeStore'
+import { MarketplaceActivityScreen } from './MarketplaceActivityScreen'
 
 export function SavingsScreen() {
   const {
@@ -16,6 +17,8 @@ export function SavingsScreen() {
     savingsSegment,
     setSavingsSegment,
     navigateToMarketplace,
+    marketplaceView,
+    openMarketplaceActivity,
     openSheet,
     beginSellFromWallet,
     runDataAction,
@@ -72,6 +75,10 @@ export function SavingsScreen() {
         ? state.walletOffers.length
         : state.offers.length
 
+  if (savingsSegment === 'marketplace' && marketplaceView === 'activity') {
+    return <MarketplaceActivityScreen />
+  }
+
   return (
     <div className="pb-28">
       <header className="sticky top-0 z-20 border-b border-cvs-gray-border bg-cvs-gray-bg px-4 pb-3 pt-4">
@@ -105,7 +112,7 @@ export function SavingsScreen() {
           }}
         />
 
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-3 flex items-center justify-between gap-2">
           {savingsSegment === 'marketplace' ? (
             <button
               type="button"
@@ -126,9 +133,25 @@ export function SavingsScreen() {
               Sort &amp; refine
             </button>
           )}
-          <span className="text-sm text-cvs-gray-muted">
-            {dealCount} deal{dealCount === 1 ? '' : 's'}
-          </span>
+          {savingsSegment === 'marketplace' ? (
+            <button
+              type="button"
+              onClick={openMarketplaceActivity}
+              className="text-sm font-semibold text-cvs-blue"
+              aria-label="Open marketplace activity"
+            >
+              Activity
+            </button>
+          ) : (
+            <span className="text-sm text-cvs-gray-muted">
+              {dealCount} deal{dealCount === 1 ? '' : 's'}
+            </span>
+          )}
+          {savingsSegment === 'marketplace' ? (
+            <span className="text-sm text-cvs-gray-muted">
+              {dealCount} deal{dealCount === 1 ? '' : 's'}
+            </span>
+          ) : null}
         </div>
 
         {browseReadOnly && savingsSegment === 'marketplace' ? (

@@ -14,6 +14,7 @@ export function SellFlowSheets() {
     openSheet,
     publishWalletListing,
     navigateToMarketplace,
+    openMarketplaceActivity,
   } = usePrototype()
 
   const walletOffer = state.walletOffers.find((w) => w.id === selectedWalletOfferId)
@@ -215,8 +216,13 @@ export function SellFlowSheets() {
             >
               View on Marketplace
             </PrimaryButton>
-            <OutlineButton onClick={() => openSheet('feat04MyListingsStub')}>
-              My listings (coming soon)
+            <OutlineButton
+              onClick={() => {
+                closeSheet()
+                openMarketplaceActivity()
+              }}
+            >
+              My listings
             </OutlineButton>
           </div>
         }
@@ -227,18 +233,6 @@ export function SellFlowSheets() {
         </p>
       </BottomSheet>
 
-      <BottomSheet
-        title="My listings"
-        size="flow"
-        open={activeSheet === 'feat04MyListingsStub'}
-        onClose={closeSheet}
-        footer={<OutlineButton onClick={closeSheet}>Close</OutlineButton>}
-      >
-        <p className="text-sm text-cvs-gray-muted">
-          <strong className="text-black">FEAT-04 stub:</strong> Edit price, cancel, and listing
-          history ship in the next build package.
-        </p>
-      </BottomSheet>
     </>
   )
 }
