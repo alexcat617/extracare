@@ -102,6 +102,10 @@ export function clearWalletPurchases(state: PrototypeState): PrototypeState {
     transfers: [],
     lastPurchaseTransferId: null,
     demoNextPurchaseOutcome: 'none',
+    tradeProposals: [],
+    activeTradeProposalId: null,
+    lastTradeTransferIds: null,
+    demoTradeConfirmTimeout: false,
   }
 }
 

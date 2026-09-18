@@ -171,7 +171,7 @@ export function createSeedOffers(): Offer[] {
 
 export function createSeedListings(offers: Offer[]): Listing[] {
   const listed = offers.filter((o) =>
-    ['ent-001', 'ent-003', 'ent-004', 'ent-005', 'ent-007', 'ent-008', 'ent-009', 'ent-010', 'ent-011', 'ent-012'].includes(
+    ['ent-001', 'ent-003', 'ent-004', 'ent-007', 'ent-008', 'ent-009', 'ent-012'].includes(
       o.entitlementId,
     ),
   )
@@ -202,13 +202,13 @@ export function createSeedListings(offers: Offer[]): Listing[] {
   }))
 }
 
-/** Jordan wallet — offers not yet listed */
+/** Sam (buyer) wallet — transferable coupons for buy / sell / trade demos */
 export function createSeedWalletOffers(): WalletOffer[] {
   const offers = createSeedOffers()
   const onCard = offers.filter((o) =>
-    ['ent-002', 'ent-006', 'ent-rx'].includes(o.entitlementId),
+    ['ent-002', 'ent-005', 'ent-006', 'ent-010', 'ent-011', 'ent-rx'].includes(o.entitlementId),
   )
-  return onCard.map((o) => ({ ...o }))
+  return onCard.map((o) => ({ ...o, status: 'active' as const }))
 }
 
 export const MOCK_MEMBER_ID = memberBuyer

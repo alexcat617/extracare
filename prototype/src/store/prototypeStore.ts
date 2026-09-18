@@ -3,7 +3,25 @@ import {
   createSeedOffers,
   createSeedWalletOffers,
 } from '../data/seed'
-import type { Listing, Offer, Transfer, WalletOffer } from '../types/marketplace'
+
+/** Add new seed wallet coupons without wiping purchases or in-progress state */
+function normalizeWalletOffer(offer: WalletOffer): WalletOffer {
+  return {
+    ...offer,
+    status: offer.status ?? 'active',
+    transferable: offer.transferable ?? true,
+  }
+}
+
+function mergeMissingSeedWalletOffers(walletOffers: WalletOffer[]): WalletOffer[] {
+  const normalized = walletOffers.map(normalizeWalletOffer)
+  const seed = createSeedWalletOffers()
+  const have = new Set(normalized.map((w) => w.entitlementId))
+  const missing = seed.filter((s) => !have.has(s.entitlementId))
+  const merged = missing.length ? [...normalized, ...missing] : normalized
+  return merged.map(normalizeWalletOffer)
+}
+import type { Listing, Offer, TradeProposal, Transfer, WalletOffer } from '../types/marketplace'
 import { CONSENT_VERSION } from '../types/marketplace'
 
 const STORAGE_KEY = 'extracare-prototype-v1'
@@ -28,6 +46,12 @@ export interface PrototypeState {
   demoPhoneVerified: boolean
   demoSellerListingCapReached: boolean
   sellerHasPublishedBefore: boolean
+  /** FEAT-03 trade proposals and dual confirm */
+  tradeProposals: TradeProposal[]
+  activeTradeProposalId: string | null
+  lastTradeTransferIds: [string, string] | null
+  /** One-shot: next seller confirm simulates timeout / lock release */
+  demoTradeConfirmTimeout: boolean
 }
 
 export type DemoPurchaseOutcome = 'none' | 'payment-fail' | 'sold-out' | 'wallet-timeout'
@@ -49,6 +73,10 @@ export const DEFAULT_STATE: PrototypeState = {
   demoPhoneVerified: true,
   demoSellerListingCapReached: false,
   sellerHasPublishedBefore: false,
+  tradeProposals: [],
+  activeTradeProposalId: null,
+  lastTradeTransferIds: null,
+  demoTradeConfirmTimeout: false,
 }
 
 function loadRaw(): Partial<PrototypeState> | null {
@@ -82,6 +110,10 @@ export function reseedListingsAndWalletState(prev: PrototypeState): PrototypeSta
     walletOffers: [...seed.walletOffers, ...purchased],
     transfers: prev.transfers,
     lastPurchaseTransferId: prev.lastPurchaseTransferId,
+    tradeProposals: [],
+    activeTradeProposalId: null,
+    lastTradeTransferIds: null,
+    demoTradeConfirmTimeout: false,
   }
 }
 
@@ -100,7 +132,9 @@ export function loadState(): PrototypeState {
     consentVersion: saved.consentVersion ?? null,
     offline: saved.offline ?? false,
     listings: saved.listings?.length ? saved.listings : seed.listings,
-    walletOffers: saved.walletOffers?.length ? saved.walletOffers : seed.walletOffers,
+    walletOffers: mergeMissingSeedWalletOffers(
+      saved.walletOffers?.length ? saved.walletOffers : seed.walletOffers,
+    ),
     transfers: saved.transfers ?? [],
     lastPurchaseTransferId: saved.lastPurchaseTransferId ?? null,
     demoNextPurchaseOutcome: migrateDemoOutcome(saved),
@@ -110,6 +144,10 @@ export function loadState(): PrototypeState {
     demoSellerListingCapReached:
       saved.demoSellerListingCapReached ?? DEFAULT_STATE.demoSellerListingCapReached,
     sellerHasPublishedBefore: saved.sellerHasPublishedBefore ?? false,
+    tradeProposals: saved.tradeProposals ?? [],
+    activeTradeProposalId: saved.activeTradeProposalId ?? null,
+    lastTradeTransferIds: saved.lastTradeTransferIds ?? null,
+    demoTradeConfirmTimeout: saved.demoTradeConfirmTimeout ?? false,
   }
 }
 
@@ -147,6 +185,10 @@ export function resetAllPrototypeData(): PrototypeState {
     demoPhoneVerified: true,
     demoSellerListingCapReached: false,
     sellerHasPublishedBefore: false,
+    tradeProposals: [],
+    activeTradeProposalId: null,
+    lastTradeTransferIds: null,
+    demoTradeConfirmTimeout: false,
   }
   persistState(fresh)
   return fresh

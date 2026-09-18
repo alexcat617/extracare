@@ -17,17 +17,24 @@ export function MobileCheckboxCard({
   onChange,
   label,
   hint,
+  disabled = false,
 }: {
   checked: boolean
   onChange: (checked: boolean) => void
   label: ReactNode
   hint?: string
+  disabled?: boolean
 }) {
   return (
-    <label className={`${cardBase} items-center ${selectedCardClass(checked)}`}>
+    <label
+      className={`${cardBase} items-center ${selectedCardClass(checked)} ${
+        disabled ? 'cursor-not-allowed opacity-60' : ''
+      }`}
+    >
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
         className={controlClass}
       />

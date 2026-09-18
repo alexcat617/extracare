@@ -29,6 +29,14 @@ import {
   checkSellEligibility,
   publishListing,
 } from '../store/sellActions'
+import type { ListingType } from '../types/marketplace'
+import {
+  applyTradeProposalSent,
+  confirmTradeParty,
+  createTradeProposal,
+  sellerRespondTrade,
+  updateBuyerTradeBundle,
+} from '../store/tradeActions'
 
 export type SheetId =
   | 'consent'
@@ -46,7 +54,14 @@ export type SheetId =
   | 'sellListingForm'
   | 'sellIneligible'
   | 'sellSuccess'
-  | 'feat03TradeStub'
+  | 'tradePickBundle'
+  | 'tradeProposalSent'
+  | 'tradeSellerReview'
+  | 'tradeBuyerConfirm'
+  | 'tradeSellerConfirm'
+  | 'tradeSuccess'
+  | 'tradeDeclined'
+  | 'tradeExpired'
   | 'feat04MyListingsStub'
   | null
 
@@ -66,7 +81,20 @@ interface PrototypeContextValue {
   setSellerDemoMode: (mode: SellerDemoMode) => void
   runDataAction: (action: DataAction) => void
   beginSellFromWallet: (walletOfferId: string) => void
-  publishWalletListing: (walletOfferId: string, askingPrice: number) => PublishOutcome
+  publishWalletListing: (
+    walletOfferId: string,
+    askingPrice: number,
+    listingType?: ListingType,
+  ) => PublishOutcome
+  beginTradeProposal: (listingId: string) => void
+  submitTradeBundle: (walletOfferIds: string[], message?: string) => 'sent' | 'updated' | 'error'
+  openTradeSellerReview: (proposalId?: string) => void
+  respondTradeAsSeller: (
+    action: 'accept' | 'decline' | 'counter',
+    sellerNote?: string,
+  ) => void
+  confirmTrade: (party: 'buyer' | 'seller') => void
+  setDemoTradeConfirmTimeout: (on: boolean) => void
   acceptMarketplaceRules: () => void
   declineMarketplaceRules: () => void
   openSheet: (sheet: SheetId, listingId?: string) => void
@@ -303,11 +331,109 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     [state, openSheet, tryTransactionalAction],
   )
 
+  const beginTradeProposal = useCallback(
+    (listingId: string) => {
+      setSelectedListingId(listingId)
+      tryTransactionalAction(() => {
+        const listing = state.listings.find((l) => l.id === listingId)
+        if (!listing || listing.status !== 'active') {
+          openSheet('buyUnavailable')
+          return
+        }
+        openSheet('tradePickBundle', listingId)
+      })
+    },
+    [state.listings, tryTransactionalAction, openSheet],
+  )
+
+  const submitTradeBundle = useCallback(
+    (walletOfferIds: string[], message?: string): 'sent' | 'updated' | 'error' => {
+      if (!selectedListingId) return 'error'
+      let result: 'sent' | 'updated' | 'error' = 'error'
+      patchState((prev) => {
+        const activeId = prev.activeTradeProposalId
+        const pendingBuyer = activeId
+          ? prev.tradeProposals.find((p) => p.id === activeId && p.status === 'pending_buyer')
+          : undefined
+
+        if (pendingBuyer) {
+          const updated = updateBuyerTradeBundle(prev, pendingBuyer.id, walletOfferIds, message)
+          if (!updated.ok) return prev
+          result = 'updated'
+          return updated.state
+        }
+
+        const created = createTradeProposal(prev, selectedListingId, walletOfferIds, message)
+        if (!created.ok) return prev
+        result = 'sent'
+        return applyTradeProposalSent(prev, created.proposal)
+      })
+      if (result !== 'error') openSheet('tradeProposalSent')
+      return result
+    },
+    [patchState, selectedListingId, openSheet],
+  )
+
+  const openTradeSellerReview = useCallback(
+    (proposalId?: string) => {
+      const proposal = proposalId
+        ? state.tradeProposals.find((p) => p.id === proposalId)
+        : state.tradeProposals.find((p) => p.status === 'pending_seller')
+      if (!proposal) return
+      setSelectedListingId(proposal.listingId)
+      patchState((prev) => ({ ...prev, activeTradeProposalId: proposal.id }))
+      openSheet('tradeSellerReview')
+    },
+    [state.tradeProposals, patchState, openSheet],
+  )
+
+  const respondTradeAsSeller = useCallback(
+    (action: 'accept' | 'decline' | 'counter', sellerNote?: string) => {
+      const proposalId = state.activeTradeProposalId
+      if (!proposalId) return
+      patchState((prev) => {
+        const result = sellerRespondTrade(prev, proposalId, action, sellerNote)
+        if (!result.ok) return prev
+        return result.state
+      })
+      const listingId = state.tradeProposals.find((p) => p.id === proposalId)?.listingId
+      if (listingId) setSelectedListingId(listingId)
+      if (action === 'accept') openSheet('tradeBuyerConfirm')
+      else if (action === 'decline') openSheet('tradeDeclined')
+      else openSheet('tradePickBundle')
+    },
+    [state.activeTradeProposalId, patchState, openSheet],
+  )
+
+  const confirmTrade = useCallback(
+    (party: 'buyer' | 'seller') => {
+      const proposalId = state.activeTradeProposalId
+      if (!proposalId) return
+      let nextSheet: SheetId = null
+      patchState((prev) => {
+        const result = confirmTradeParty(prev, proposalId, party)
+        if (!result.ok) return prev
+        const proposal = result.state.tradeProposals.find((p) => p.id === proposalId)
+        if (proposal?.status === 'expired') nextSheet = 'tradeExpired'
+        else if (proposal?.status === 'completed') nextSheet = 'tradeSuccess'
+        else if (party === 'buyer') nextSheet = 'tradeSellerConfirm'
+        return result.state
+      })
+      if (nextSheet) openSheet(nextSheet)
+    },
+    [state.activeTradeProposalId, patchState, openSheet],
+  )
+
+  const setDemoTradeConfirmTimeout = useCallback(
+    (on: boolean) => patchState((prev) => ({ ...prev, demoTradeConfirmTimeout: on })),
+    [patchState],
+  )
+
   const publishWalletListing = useCallback(
-    (walletOfferId: string, askingPrice: number): PublishOutcome => {
+    (walletOfferId: string, askingPrice: number, listingType: ListingType = 'sale'): PublishOutcome => {
       let outcome: PublishOutcome = 'error'
       patchState((prev) => {
-        const result = publishListing(prev, walletOfferId, askingPrice)
+        const result = publishListing(prev, walletOfferId, askingPrice, listingType)
         if (!result.ok) {
           if (result.reason === 'price') outcome = 'price'
           else if (result.reason === 'ineligible') outcome = 'ineligible'
@@ -338,6 +464,12 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       runDataAction,
       beginSellFromWallet,
       publishWalletListing,
+      beginTradeProposal,
+      submitTradeBundle,
+      openTradeSellerReview,
+      respondTradeAsSeller,
+      confirmTrade,
+      setDemoTradeConfirmTimeout,
       openSheet,
       closeSheet,
       tryTransactionalAction,
@@ -364,6 +496,12 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       runDataAction,
       beginSellFromWallet,
       publishWalletListing,
+      beginTradeProposal,
+      submitTradeBundle,
+      openTradeSellerReview,
+      respondTradeAsSeller,
+      confirmTrade,
+      setDemoTradeConfirmTimeout,
       openSheet,
       closeSheet,
       tryTransactionalAction,
