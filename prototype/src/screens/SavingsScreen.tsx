@@ -409,13 +409,16 @@ function MarketplaceBrowseCard({
             offer={offer}
             badge={listing.badge}
             marketplace
+            marketplaceBrowse
             price={listing.price}
             secondaryAction={{
               label: hiding ? 'Hiding…' : 'Hide',
               onClick: handleHide,
             }}
             primaryAction={{
-              label: browseReadOnly ? 'Buy (rules required)' : 'Buy',
+              label: browseReadOnly
+                ? `Buy — $${listing.price.toFixed(2)} (rules required)`
+                : `Buy — $${listing.price.toFixed(2)}`,
               onClick: onBuy,
               disabled: hiding,
             }}
