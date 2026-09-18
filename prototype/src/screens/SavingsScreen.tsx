@@ -234,7 +234,7 @@ export function SavingsScreen() {
               <CouponCard
                 key={offer.id}
                 offer={offer}
-                secondaryAction={{ label: 'Shop now', onClick: () => {} }}
+                secondaryAction={{ label: 'Add to card', onClick: () => {} }}
               />
             ))
         ) : null}

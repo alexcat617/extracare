@@ -6,13 +6,14 @@ import {
 } from '../data/seed'
 import type { Listing, Transfer, WalletOffer } from '../types/marketplace'
 import { getOfferForListing, type PrototypeState } from './prototypeStore'
+import { snapshotFromOffer } from './trustActions'
 
 export type PurchaseError = 'payment' | 'sold' | 'wallet-timeout' | 'not-found' | 'inactive'
 
 export interface PurchaseSuccess {
   ok: true
   transfer: Transfer
-  walletOffer: WalletOffer
+  walletOffer: WalletOffer | null
 }
 
 export interface PurchaseFailure {
@@ -53,6 +54,7 @@ export function executePurchase(
   }
 
   const now = new Date().toISOString()
+  const snapshot = snapshotFromOffer(offer, listing.price)
   const transfer: Transfer = {
     id: newTransferId(),
     listingId: listing.id,
@@ -62,13 +64,25 @@ export function executePurchase(
     status: 'completed',
     createdAt: now,
     completedAt: now,
+    listingSnapshot: snapshot,
+    refundStatus: 'none',
   }
 
-  const walletOffer: WalletOffer = {
-    ...offer,
-    id: `wallet-${offer.id}-${transfer.id}`,
-    status: 'active',
-    transferId: transfer.id,
+  const missingWallet = state.demoNextPurchaseMissingWallet
+  const termsMismatch = state.demoNextPurchaseTermsMismatch
+
+  let walletOffer: WalletOffer | null = null
+  if (!missingWallet) {
+    const issued: WalletOffer = {
+      ...offer,
+      id: `wallet-${offer.id}-${transfer.id}`,
+      status: 'active',
+      transferId: transfer.id,
+    }
+    if (termsMismatch) {
+      issued.savingsAmount = offer.savingsAmount + 1
+    }
+    walletOffer = issued
   }
 
   return { ok: true, transfer, walletOffer }
@@ -82,12 +96,21 @@ export function applyPurchaseSuccess(
   const listings: Listing[] = state.listings.map((l) =>
     l.id === listingId ? { ...l, status: 'sold' as const } : l,
   )
+  const walletOffers = result.walletOffer
+    ? [...state.walletOffers, result.walletOffer]
+    : state.walletOffers
+  const forceMissing = result.walletOffer
+    ? state.demoForceMissingWalletTransferIds
+    : [...state.demoForceMissingWalletTransferIds, result.transfer.id]
   return {
     ...state,
     listings,
-    walletOffers: [...state.walletOffers, result.walletOffer],
+    walletOffers,
     transfers: [...state.transfers, result.transfer],
     lastPurchaseTransferId: result.transfer.id,
+    demoNextPurchaseMissingWallet: false,
+    demoNextPurchaseTermsMismatch: false,
+    demoForceMissingWalletTransferIds: forceMissing,
   }
 }
 
@@ -102,6 +125,11 @@ export function clearWalletPurchases(state: PrototypeState): PrototypeState {
     transfers: [],
     lastPurchaseTransferId: null,
     demoNextPurchaseOutcome: 'none',
+    demoNextPurchaseMissingWallet: false,
+    demoNextPurchaseTermsMismatch: false,
+    redeemedTransferIds: [],
+    disputeRetriedTransferIds: {},
+    demoForceMissingWalletTransferIds: [],
     tradeProposals: [],
     activeTradeProposalId: null,
     lastTradeTransferIds: null,

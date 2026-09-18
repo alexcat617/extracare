@@ -52,6 +52,8 @@ const PRESETS: { id: DemoPreset; label: string; hint: string }[] = [
 
   { id: 'sam-buy', label: 'Sam: Browse & buy', hint: 'Consent on · Marketplace browse' },
 
+  { id: 'sam-orders', label: 'Sam: Orders & escrow', hint: 'FEAT-05 · sample purchase on Orders tab' },
+
   { id: 'jordan-listings', label: 'Jordan: Listings', hint: 'My listings + trade inbox' },
 ]
 
@@ -72,6 +74,8 @@ export function DemoControls() {
     setOfflineMode,
 
     setDemoNextPurchaseOutcome,
+
+    setDemoTrustScenario,
 
     setSellerDemoMode,
 
@@ -305,6 +309,58 @@ export function DemoControls() {
                 <option value="wallet-timeout">Wallet timeout → refund</option>
 
               </DemoSelect>
+
+
+
+              <DemoSelect
+
+                label="Next buy — trust scenario (one try)"
+
+                value={
+                  state.demoNextPurchaseMissingWallet
+                    ? 'missing-wallet'
+                    : state.demoNextPurchaseTermsMismatch
+                      ? 'terms-mismatch'
+                      : 'none'
+                }
+
+                onChange={(v) =>
+                  setDemoTrustScenario(
+                    v as 'none' | 'missing-wallet' | 'terms-mismatch',
+                  )
+                }
+
+              >
+
+                <option value="none">Normal delivery</option>
+
+                <option value="missing-wallet">Offer missing from wallet</option>
+
+                <option value="terms-mismatch">Wallet terms ≠ listing</option>
+
+              </DemoSelect>
+
+
+
+              {state.lastPurchaseTransferId ? (
+
+                <button
+
+                  type="button"
+
+                  className="w-full rounded-xl border border-cvs-gray-border bg-white px-4 py-3 text-left text-sm font-medium text-black active:bg-cvs-gray-bg"
+
+                  onClick={() =>
+                    setDemoTrustScenario('redeemed', state.lastPurchaseTransferId!)
+                  }
+
+                >
+
+                  Mark last purchase redeemed (blocks refund)
+
+                </button>
+
+              ) : null}
 
 
 

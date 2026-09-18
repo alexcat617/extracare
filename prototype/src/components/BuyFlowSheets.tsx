@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { computeExtraBucksBalances } from '../lib/extraBucksBalance'
 import { calcOrderTotal } from '../lib/pricing'
 import { usePrototype } from '../context/PrototypeContext'
 import { getOfferForListing } from '../store/prototypeStore'
 import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
+import { EscrowTimeline } from './EscrowTimeline'
+import { LoadingSpinner } from './LoadingSpinner'
 import { MobileRadioCard } from './MobileFormControls'
 
 function channelLabel(channel: string): string {
@@ -32,6 +34,14 @@ export function BuyFlowSheets() {
   const listingOffer = listing ? getOfferForListing(state.offers, listing) : undefined
   const order = listing ? calcOrderTotal(listing.price) : null
   const extraBucks = computeExtraBucksBalances(state)
+  const payProcessing = purchasing
+  const lastTransfer = state.lastPurchaseTransferId
+    ? state.transfers.find((t) => t.id === state.lastPurchaseTransferId)
+    : undefined
+
+  useEffect(() => {
+    if (activeSheet !== 'buyConfirm') setPurchasing(false)
+  }, [activeSheet])
 
   const startBuy = () => {
     tryTransactionalAction(() => {
@@ -44,8 +54,10 @@ export function BuyFlowSheets() {
   }
 
   const handleConfirmPay = async () => {
-    if (!selectedListingId) return
+    if (!selectedListingId || purchasing) return
     setPurchasing(true)
+    const delayMs = paymentMethod === 'card' ? 1400 : 900
+    await new Promise((resolve) => window.setTimeout(resolve, delayMs))
     const result = await confirmPurchase(selectedListingId)
     setPurchasing(false)
     if (result === 'success') openSheet('buySuccess')
@@ -142,24 +154,41 @@ export function BuyFlowSheets() {
         title="Buy now"
         size="flow"
         open={activeSheet === 'buyConfirm'}
-        onClose={closeSheet}
+        onClose={() => {
+          if (payProcessing) return
+          closeSheet()
+        }}
         footer={
           order ? (
             <div className="space-y-3">
               <PrimaryButton onClick={handleConfirmPay} disabled={purchasing}>
-                {purchasing ? 'Processing…' : `Pay $${order.total.toFixed(2)}`}
+                {payProcessing ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <LoadingSpinner className="h-5 w-5 border-2" />
+                    {paymentMethod === 'card' ? 'Charging card…' : 'Using ExtraBucks…'}
+                  </span>
+                ) : (
+                  `Pay $${order.total.toFixed(2)}`
+                )}
               </PrimaryButton>
-              <OutlineButton onClick={closeSheet} disabled={purchasing}>
-                Cancel
-              </OutlineButton>
+              {payProcessing ? null : (
+                <OutlineButton onClick={closeSheet}>Cancel</OutlineButton>
+              )}
               <p className="text-center text-xs text-cvs-gray-muted">
-                Funds held in escrow until wallet sync completes.
+                {payProcessing
+                  ? paymentMethod === 'card'
+                    ? 'Please keep this screen open while we authorize your card.'
+                    : 'Applying your ExtraCare balance and starting escrow.'
+                  : 'Funds held in escrow until wallet sync completes.'}
               </p>
             </div>
           ) : undefined
         }
       >
         {listing && listingOffer && order ? (
+          payProcessing ? (
+            <BuyPaymentProcessing method={paymentMethod} total={order.total} />
+          ) : (
           <div className="space-y-4 text-sm">
             <div className="flex gap-3 rounded-xl border border-cvs-gray-border p-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 text-xl" aria-hidden>
@@ -195,6 +224,7 @@ export function BuyFlowSheets() {
               />
             </fieldset>
           </div>
+          )
         ) : null}
       </BottomSheet>
 
@@ -213,20 +243,24 @@ export function BuyFlowSheets() {
             >
               View on card
             </PrimaryButton>
-            <OutlineButton onClick={closeSheet}>Continue shopping</OutlineButton>
+            <OutlineButton onClick={closeSheet}>Close</OutlineButton>
           </div>
         }
       >
         <div className="space-y-4 text-sm text-cvs-gray-muted">
           <SuccessBanner title="Protected purchase complete" />
-          <p>
-            Your payment was released to the seller after we confirmed the offer on your ExtraCare
-            card.
-          </p>
+          {lastTransfer ? (
+            <div className="rounded-xl border border-cvs-gray-border bg-white p-4">
+              <p className="mb-3 font-semibold text-black">Purchase status</p>
+              <EscrowTimeline transfer={lastTransfer} walletOffers={state.walletOffers} />
+            </div>
+          ) : null}
           <p className="rounded-lg border border-cvs-gray-border bg-cvs-gray-bg p-3 font-mono text-xs text-black">
             Transfer ID: {state.lastPurchaseTransferId ?? '—'}
           </p>
-          <p className="text-xs">Save this ID if you need help from CVS support.</p>
+          <p className="text-xs">
+            Save this ID for support. For issues within 24 hours, use Get help on the Orders tab.
+          </p>
         </div>
       </BottomSheet>
 
@@ -275,6 +309,39 @@ export function BuyFlowSheets() {
       </BottomSheet>
 
     </>
+  )
+}
+
+function BuyPaymentProcessing({
+  method,
+  total,
+}: {
+  method: 'extrabucks' | 'card'
+  total: number
+}) {
+  const isCard = method === 'card'
+  return (
+    <div
+      className="flex min-h-[40vh] flex-col items-center justify-center px-4 text-center"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <LoadingSpinner />
+      <p className="mt-6 text-lg font-semibold text-black">
+        {isCard ? 'Authorizing payment' : 'Applying ExtraBucks'}
+      </p>
+      <p className="mt-2 text-sm text-cvs-gray-muted">
+        {isCard
+          ? `Charging $${total.toFixed(2)} to Visa •••• 4242`
+          : `Using $${total.toFixed(2)} from your ExtraCare ExtraBucks balance`}
+      </p>
+      <p className="mt-6 max-w-[280px] text-xs text-cvs-gray-muted">
+        {isCard
+          ? 'This usually takes a few seconds. Your listing stays reserved while we confirm.'
+          : 'We’ll hold payment in escrow and transfer the offer to your card wallet.'}
+      </p>
+    </div>
   )
 }
 

@@ -4,6 +4,7 @@ import { BuyFlowSheets } from './BuyFlowSheets'
 import { SellFlowSheets } from './SellFlowSheets'
 import { TradeFlowSheets } from './TradeFlowSheets'
 import { MyListingFlowSheets } from './MyListingFlowSheets'
+import { PurchaseTrustFlowSheets } from './PurchaseTrustFlowSheets'
 import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
 import { MobileCheckboxCard } from './MobileFormControls'
 
@@ -135,6 +136,7 @@ export function SheetHost() {
       <SellFlowSheets />
       <TradeFlowSheets />
       <MyListingFlowSheets />
+      <PurchaseTrustFlowSheets />
     </>
   )
 }

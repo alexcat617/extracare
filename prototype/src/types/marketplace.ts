@@ -41,6 +41,19 @@ export interface Listing {
   badge?: string
 }
 
+/** Immutable listing terms at purchase time (FLOW-06 dispute compare) */
+export interface ListingSnapshot {
+  title: string
+  headline: string
+  savingsAmount: number
+  price: number
+  minPurchase?: number
+  expiry: string
+  channel: string
+}
+
+export type TransferRefundStatus = 'none' | 'completed'
+
 export interface Transfer {
   id: string
   listingId: string
@@ -50,6 +63,10 @@ export interface Transfer {
   status: TransferStatus
   createdAt: string
   completedAt?: string
+  /** FEAT-05: frozen terms for dispute comparison */
+  listingSnapshot?: ListingSnapshot
+  refundStatus?: TransferRefundStatus
+  disputeCaseId?: string
   /** FEAT-03: paired transfer on atomic trade swap */
   linkedTransferId?: string
   tradeProposalId?: string
