@@ -12,6 +12,7 @@ import { getOfferForListing, hasActiveListingForEntitlement } from '../store/pro
 import type { WalletOffer } from '../types/marketplace'
 import { CouponOfferSection } from './CouponOfferSection'
 import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
+import { LoadingSpinner } from './LoadingSpinner'
 import { MobileCheckboxCard } from './MobileFormControls'
 
 export function TradeFlowSheets() {
@@ -29,6 +30,7 @@ export function TradeFlowSheets() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bundleError, setBundleError] = useState<string | null>(null)
+  const [acceptingTrade, setAcceptingTrade] = useState(false)
   const activeProposal = state.activeTradeProposalId
     ? state.tradeProposals.find((p) => p.id === state.activeTradeProposalId)
     : undefined
@@ -54,11 +56,22 @@ export function TradeFlowSheets() {
       : null
 
   useEffect(() => {
-    if (activeSheet !== 'tradeSellerReview') return
+    if (activeSheet !== 'tradeSellerReview') {
+      setAcceptingTrade(false)
+      return
+    }
     if (activeProposal?.status === 'completed') {
       openSheet('tradeSuccess')
     }
   }, [activeSheet, activeProposal?.status, openSheet])
+
+  const handleAcceptTrade = async () => {
+    if (!activeProposal || acceptingTrade) return
+    setAcceptingTrade(true)
+    await new Promise((resolve) => window.setTimeout(resolve, 1200))
+    respondTradeAsSeller('accept', activeProposal.id)
+    setAcceptingTrade(false)
+  }
 
   const tradePickResetKey = activeSheet === 'tradePickBundle'
     ? `${selectedListingId ?? ''}:${activeProposal?.id ?? ''}:${activeProposal?.status ?? ''}`
@@ -226,23 +239,38 @@ export function TradeFlowSheets() {
         title="Trade proposal"
         size="flow"
         open={activeSheet === 'tradeSellerReview'}
-        onClose={closeSheet}
+        onClose={() => {
+          if (acceptingTrade) return
+          closeSheet()
+        }}
         footer={
           activeProposal?.status === 'pending_seller' ? (
             <div className="space-y-3">
-              <PrimaryButton
-                onClick={() => respondTradeAsSeller('accept', activeProposal.id)}
-              >
-                Accept trade
+              <PrimaryButton onClick={handleAcceptTrade} disabled={acceptingTrade}>
+                {acceptingTrade ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <LoadingSpinner className="h-5 w-5 border-2" />
+                    Completing trade…
+                  </span>
+                ) : (
+                  'Accept trade'
+                )}
               </PrimaryButton>
-              <OutlineButton
-                onClick={() => {
-                  respondTradeAsSeller('decline', activeProposal.id)
-                  closeSheet()
-                }}
-              >
-                Decline
-              </OutlineButton>
+              {acceptingTrade ? null : (
+                <OutlineButton
+                  onClick={() => {
+                    respondTradeAsSeller('decline', activeProposal.id)
+                    closeSheet()
+                  }}
+                >
+                  Decline
+                </OutlineButton>
+              )}
+              {acceptingTrade ? (
+                <p className="text-center text-xs text-cvs-gray-muted">
+                  Keep this screen open while we swap offers on both ExtraCare cards.
+                </p>
+              ) : null}
             </div>
           ) : (
             <OutlineButton onClick={closeSheet}>Close</OutlineButton>
@@ -250,6 +278,9 @@ export function TradeFlowSheets() {
         }
       >
         {activeProposal && listingOffer ? (
+          acceptingTrade ? (
+            <TradeAcceptProcessing />
+          ) : (
           <div className="space-y-4 text-sm">
             <CouponOfferSection
               label="Your listing"
@@ -266,6 +297,7 @@ export function TradeFlowSheets() {
               trade.
             </p>
           </div>
+          )
         ) : (
           <p className="text-sm text-cvs-gray-muted">No pending proposal selected.</p>
         )}
@@ -305,5 +337,25 @@ export function TradeFlowSheets() {
       </BottomSheet>
 
     </>
+  )
+}
+
+function TradeAcceptProcessing() {
+  return (
+    <div
+      className="flex min-h-[40vh] flex-col items-center justify-center px-4 text-center"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <LoadingSpinner />
+      <p className="mt-6 text-lg font-semibold text-black">Completing trade</p>
+      <p className="mt-2 text-sm text-cvs-gray-muted">
+        Voiding prior offers and re-issuing them on each member&apos;s card.
+      </p>
+      <p className="mt-6 max-w-[280px] text-xs text-cvs-gray-muted">
+        This usually takes a few seconds. Both sides get new transfer IDs when the swap finishes.
+      </p>
+    </div>
   )
 }
