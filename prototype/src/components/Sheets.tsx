@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePrototype } from '../context/PrototypeContext'
 import { BuyFlowSheets } from './BuyFlowSheets'
+import { SellFlowSheets } from './SellFlowSheets'
 import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
 import { MobileCheckboxCard } from './MobileFormControls'
 
@@ -125,18 +126,7 @@ export function SheetHost() {
       </BottomSheet>
 
       <BuyFlowSheets />
-
-      <BottomSheet
-        title="Sell on Marketplace"
-        open={activeSheet === 'feat02Stub'}
-        onClose={closeSheet}
-        footer={<OutlineButton onClick={closeSheet}>Close</OutlineButton>}
-      >
-        <p className="text-sm text-cvs-gray-muted">
-          <strong className="text-black">FEAT-02 stub:</strong> List-from-wallet pricing and publish
-          flow comes next. ExtraCare link and marketplace consent are enforced here.
-        </p>
-      </BottomSheet>
+      <SellFlowSheets />
     </>
   )
 }

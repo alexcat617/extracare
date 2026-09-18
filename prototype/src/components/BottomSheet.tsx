@@ -1,7 +1,17 @@
 import type { ReactNode } from 'react'
 
-/** compact: short transactional sheets. tall: filter/refine — panel extends to near top of viewport */
-export type BottomSheetSize = 'compact' | 'tall'
+/**
+ * compact — one-off sheets (link gate, errors); height follows content.
+ * flow — multi-step journey (sell/buy); fixed height so steps don’t jump.
+ * tall — filters/refine; 90dvh.
+ */
+export type BottomSheetSize = 'compact' | 'flow' | 'tall'
+
+export const BOTTOM_SHEET_HEIGHT: Record<BottomSheetSize, string> = {
+  compact: 'max-h-[90vh]',
+  flow: 'h-[72dvh] max-h-[72dvh]',
+  tall: 'h-[90dvh] max-h-[90dvh]',
+}
 
 interface BottomSheetProps {
   title: string
@@ -24,10 +34,7 @@ export function BottomSheet({
 }: BottomSheetProps) {
   if (!open) return null
 
-  const panelHeight =
-    size === 'tall'
-      ? 'h-[90dvh] max-h-[90dvh]'
-      : 'max-h-[90vh]'
+  const panelHeight = BOTTOM_SHEET_HEIGHT[size]
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
@@ -42,6 +49,8 @@ export function BottomSheet({
         aria-modal="true"
         aria-label={ariaLabel ?? title}
         className={`relative z-10 flex w-full max-w-[430px] flex-col rounded-t-2xl bg-white shadow-xl ${panelHeight}`}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 flex-col items-center pt-2 pb-1">
           <div className="h-1 w-10 rounded-full bg-cvs-gray-border" aria-hidden />

@@ -17,7 +17,7 @@ export function SavingsScreen() {
     setSavingsSegment,
     navigateToMarketplace,
     openSheet,
-    tryTransactionalAction,
+    beginSellFromWallet,
     runDataAction,
   } = usePrototype()
   const [loading, setLoading] = useState(false)
@@ -194,10 +194,12 @@ export function SavingsScreen() {
         ) : null}
 
         {!loading && savingsSegment === 'on-card' ? (
-          state.walletOffers.length === 0 ? (
+          state.walletOffers.filter((o) => o.status === 'active').length === 0 ? (
             <p className="text-center text-sm text-cvs-gray-muted py-8">No offers on your card.</p>
           ) : (
-            state.walletOffers.map((offer) => (
+            state.walletOffers
+              .filter((o) => o.status === 'active')
+              .map((offer) => (
               <CouponCard
                 key={offer.id}
                 offer={offer}
@@ -210,10 +212,12 @@ export function SavingsScreen() {
                   offer.transferable
                     ? {
                         label: 'Not for me',
-                        onClick: () =>
-                          tryTransactionalAction(() => openSheet('feat02Stub')),
+                        onClick: () => beginSellFromWallet(offer.id),
                       }
-                    : undefined
+                    : {
+                        label: 'Can’t sell',
+                        onClick: () => beginSellFromWallet(offer.id),
+                      }
                 }
               />
             ))

@@ -51,6 +51,12 @@
 ## 4. UX interaction (MUST)
 
 - Prefer **sheets + segments** over deep navigation stacks for consent, buy confirm, success.
+- **Bottom sheet heights** (`prototype/src/components/BottomSheet.tsx` — do not invent per-screen heights):
+  | `size` | Use |
+  |--------|-----|
+  | **`flow`** | **Multi-step journeys** (FLOW-01 buy, FLOW-02 sell): every step in the same flow uses **`size="flow"`** (fixed **72dvh**) so the panel does not jump between steps. Body scrolls inside the sheet if content is taller. |
+  | **`tall`** | Sort & refine / filter panels (**90dvh**). |
+  | **`compact`** (default) | One-off gates: consent, link ExtraCare, offline, blocked consent, prototype panel. |
 - **FLOW-00:** Decline consent → **read-only browse**; buy/sell/trade re-prompt rules—no silent bypass.
 - **ExtraCare linked** before transactional CTAs (mock link flow, consistent across features).
 - **Trust:** Paid flows surface **escrow** and **official transfer** in plain language (see P2 in PERSONAS).

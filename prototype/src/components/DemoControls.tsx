@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import type { ConsentMode, DataAction } from '../context/PrototypeContext'
+import type { ConsentMode, DataAction, SellerDemoMode } from '../context/PrototypeContext'
 import { usePrototype } from '../context/PrototypeContext'
 import type { DemoPurchaseOutcome } from '../store/prototypeStore'
 import { BottomSheet } from './BottomSheet'
@@ -24,8 +24,17 @@ export function DemoControls() {
     setExtraCareMode,
     setOfflineMode,
     setDemoNextPurchaseOutcome,
+    setSellerDemoMode,
     runDataAction,
   } = usePrototype()
+
+  const sellerMode: SellerDemoMode = !state.demoPhoneVerified
+    ? 'no-phone'
+    : state.demoSellerListingCapReached
+      ? 'listing-cap'
+      : state.demoSellerAccountDays < 7
+        ? 'new-account'
+        : 'eligible'
 
   const activeListings = state.listings.filter((l) => l.status === 'active')
 
@@ -99,6 +108,17 @@ export function DemoControls() {
             <option value="payment-fail">Payment fails</option>
             <option value="sold-out">Sold out</option>
             <option value="wallet-timeout">Wallet timeout → refund</option>
+          </DemoSelect>
+
+          <DemoSelect
+            label="Seller eligibility (Jordan)"
+            value={sellerMode}
+            onChange={(v) => setSellerDemoMode(v as SellerDemoMode)}
+          >
+            <option value="eligible">Eligible (14-day account)</option>
+            <option value="new-account">New account (3 days)</option>
+            <option value="listing-cap">Listing cap reached</option>
+            <option value="no-phone">Phone not verified</option>
           </DemoSelect>
 
           <DemoSelect
