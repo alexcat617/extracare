@@ -11,12 +11,18 @@ export type CaseStudyLink = {
   path: string
 }
 
+export type CaseStudySection = {
+  title: string
+  bullets: string[]
+}
+
 export type CaseStudyChapter = {
   id: string
   eyebrow: string
   title: string
   paragraphs: string[]
   bullets?: string[]
+  sections?: CaseStudySection[]
   callout?: { title: string; body: string }
   links?: CaseStudyLink[]
 }
@@ -55,8 +61,26 @@ export const CASE_STUDY_CHAPTERS: CaseStudyChapter[] = [
     eyebrow: 'Solution',
     title: 'A marketplace CVS could mediate',
     paragraphs: [
-      'An in-app marketplace lets members list unused offers and buy or trade ones they will use. Transfer is atomic: the offer is voided on the seller and re-issued on the buyer with the same terms and a new transfer ID.',
-      'Paid buys sit in escrow. Limits, ratings, and disputes keep fraud from undermining the concept. Shoppers never share a phone number at checkout as the product mechanic.',
+      'ExtraCare members can list unused coupons in the app and buy, sell, or trade with other members—with CVS mediating transfer, not informal sharing at checkout.',
+    ],
+    sections: [
+      {
+        title: 'How it works',
+        bullets: [
+          'Members post unused offers in the marketplace for others to buy or trade.',
+          'When a deal completes, the seller’s coupon is voided and the same offer is re-issued on the buyer’s account with a new transfer ID.',
+          'Paid buys use escrow until the trade finishes. Ratings, limits, and dispute paths reduce fraud; shoppers do not share phone numbers at checkout as the product mechanic.',
+        ],
+      },
+      {
+        title: 'Why it benefits everyone',
+        bullets: [
+          'Fewer wasted coupons—discounts that would expire reach shoppers who will use them.',
+          'Stronger baskets—matched offers make it more likely members add those categories to the trip.',
+          'More app usage—members check CVS for deals instead of defaulting to Amazon or Walmart.',
+          'Better loyalty—ExtraCare feels useful, not like a pile of irrelevant discounts in Savings.',
+        ],
+      },
     ],
     links: [
       { label: 'Concept', path: 'CONCEPT.md' },
@@ -83,7 +107,6 @@ export const CASE_STUDY_CHAPTERS: CaseStudyChapter[] = [
     paragraphs: [
       'This prototype is built from journey maps, not a screen inventory. Nodes are steps, decisions, and error branches—not “Screen 4B.” Layout comes after behavior is specified.',
       'A screen list optimizes for page coverage. Consent decline, escrow failure, and cross-feature exits (hub → buy vs wallet → sell) get cut or bolted on. An agent without a graph invents chrome.',
-      'Docs stack as FLOWS shared rules → FLOW-XX steps → FEAT map → FEAT stories and AC. The build prompt is: implement every map node and key error. Example: FEAT-00 checkConsent → showRules → browseOnly versus recordConsent → marketplaceHub, wired as sheets and ConsentMode—not a single Marketplace mock.',
     ],
     bullets: [
       'Screen inventory = what pages exist.',
@@ -92,7 +115,7 @@ export const CASE_STUDY_CHAPTERS: CaseStudyChapter[] = [
     ],
     callout: {
       title: 'Why maps beat screens',
-      body: 'Branches and errors are first-class. Cross-feature exits are named. Agents implement nodes, not a pretty empty state.',
+      body: 'A map includes the messy paths—decline, errors, and where one feature hands off to another. A screen list usually only shows the happy pages.',
     },
     links: [
       { label: 'Maps index', path: 'features/maps/README.md' },

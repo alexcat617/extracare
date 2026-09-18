@@ -108,6 +108,16 @@ export function CaseStudyScreen({ onClose, onStart }: CaseStudyScreenProps) {
                     <p key={p.slice(0, 40)}>{p}</p>
                   ))}
                 </div>
+                {chapter.sections?.map((section) => (
+                  <div key={section.title} className="mt-4">
+                    <h3 className="text-sm font-semibold text-cvs-blue-dark">{section.title}</h3>
+                    <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-neutral-800">
+                      {section.bullets.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
                 {chapter.bullets?.length ? (
                   <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-neutral-800">
                     {chapter.bullets.map((item) => (
