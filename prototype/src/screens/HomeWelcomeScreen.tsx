@@ -1,11 +1,15 @@
-import { PrimaryButton } from '../components/BottomSheet'
+import { useState } from 'react'
+import { OutlineButton, PrimaryButton } from '../components/BottomSheet'
 import { markWelcomeSeen } from '../lib/welcomeGate'
+import { CaseStudyScreen } from './CaseStudyScreen'
 
 interface HomeWelcomeScreenProps {
   onStart: () => void
 }
 
 export function HomeWelcomeScreen({ onStart }: HomeWelcomeScreenProps) {
+  const [caseStudyOpen, setCaseStudyOpen] = useState(false)
+
   const handleStart = () => {
     markWelcomeSeen()
     onStart()
@@ -23,9 +27,13 @@ export function HomeWelcomeScreen({ onStart }: HomeWelcomeScreenProps) {
           Case-study prototype — coupons, Marketplace, and protected buys.
         </p>
       </div>
-      <div className="mt-10 w-full max-w-sm px-2">
+      <div className="mt-10 w-full max-w-sm space-y-3 px-2">
         <PrimaryButton onClick={handleStart}>Start</PrimaryButton>
+        <OutlineButton onClick={() => setCaseStudyOpen(true)}>See process</OutlineButton>
       </div>
+      {caseStudyOpen ? (
+        <CaseStudyScreen onClose={() => setCaseStudyOpen(false)} onStart={handleStart} />
+      ) : null}
     </div>
   )
 }

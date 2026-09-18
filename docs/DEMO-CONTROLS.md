@@ -27,12 +27,14 @@ One tap each: resets the right mock state and navigates. Presets do **not** auto
 
 | Preset | State | Navigation |
 |--------|--------|------------|
-| **Fresh start** | Factory reset (consent off, seed data) | **Home** splash → tap **Start** for Savings |
+| **Fresh start** | Factory reset (consent off, seed data) | **Home** splash → tap **Start** for Savings, or **See process** for the portfolio case-study story |
 | **Sam: Browse & buy** | Consent given, reseed marketplace + wallet | Savings → Marketplace **Browse** |
 | **Sam: Orders & escrow** | Consent given + sample completed purchase | **Orders** tab (FEAT-05) |
 | **Jordan: Listings** | Consent given, Jordan seller pack (listings + pending trade inbox) | Marketplace → **Listings** |
 
 **Trade demo:** **Jordan: Listings** → **Review trade offer** → **Accept trade** → success sheet. Sam = buyer (`MOCK_MEMBER_ID`); Jordan = seller (`MOCK_SELLER_ID`).
+
+**Home tab:** After Fresh start (or first visit), **Start** opens Savings. **See process** opens a full-screen portfolio story (problem, maps, Azure-shaped FEATs, git, Cursor). Close returns to Home; the last chapter can **Start prototype**.
 
 ---
 
