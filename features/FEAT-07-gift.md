@@ -4,7 +4,7 @@
 |-------|--------|
 | ID | FEAT-07 |
 | Wave | D |
-| Status | `draft` |
+| Status | `draft` (prototype **not built** — out of case-study scope; FLOW-04 documented only) |
 | Flows | [FLOW-04](../flows/FLOW-04-gift.md) |
 | Depends on | FEAT-00 |
 | Blocks | — |
