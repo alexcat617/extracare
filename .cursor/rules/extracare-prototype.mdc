@@ -21,7 +21,7 @@ Read: `docs/DESIGN-GUARDRAILS.md`, `docs/cvs-app-reference/UI-PATTERNS-AND-IA.md
 - States: empty, loading, blocked, success—not happy-path only.
 - a11y minimum: contrast, focus visible, `aria-label` on icon buttons.
 - Shopper UI checkboxes/radios: `MobileCheckboxCard` / `MobileRadioCard` in `prototype/src/components/MobileFormControls.tsx` (full-width card, ≥56px tap, 24px control)—not bare small inputs.
-- Multi-step buy/sell sheets: `BottomSheet` **`size="flow"`** on every step in `BuyFlowSheets` / `SellFlowSheets` (fixed 72dvh)—no height jumping between steps. Filters use `tall`; one-off gates use `compact`.
+- Multi-step sheets: `BottomSheet` **`size="flow"`** on every step in buy/sell/trade/listing flows (fixed **90dvh**)—no height jumping between steps. Filters/demo panel may use `tall` (same height). Reserve `compact` only for exceptional content-sized sheets.
 
 ## Demo
 

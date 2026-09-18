@@ -30,6 +30,7 @@ export function SheetHost() {
     <>
       <BottomSheet
         title="Marketplace rules"
+        size="flow"
         open={activeSheet === 'consent'}
         onClose={declineMarketplaceRules}
         ariaLabel="Marketplace rules and consent"
@@ -79,6 +80,7 @@ export function SheetHost() {
 
       <BottomSheet
         title="Link ExtraCare"
+        size="flow"
         open={activeSheet === 'linkExtraCare'}
         onClose={closeSheet}
         footer={
@@ -100,6 +102,7 @@ export function SheetHost() {
 
       <BottomSheet
         title="Accept marketplace rules"
+        size="flow"
         open={activeSheet === 'blockedConsent'}
         onClose={closeSheet}
         footer={
@@ -117,6 +120,7 @@ export function SheetHost() {
 
       <BottomSheet
         title="You&apos;re offline"
+        size="flow"
         open={activeSheet === 'offline'}
         onClose={closeSheet}
         footer={<PrimaryButton onClick={closeSheet}>OK</PrimaryButton>}

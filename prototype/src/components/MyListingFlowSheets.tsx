@@ -4,7 +4,8 @@ import { getListingManageBlock } from '../store/listingManageActions'
 import { getOfferForListing } from '../store/prototypeStore'
 import { priceBand, normalizePrice } from '../lib/sellPricing'
 import { usePrototype } from '../context/PrototypeContext'
-import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
+import { CouponOfferSection } from './CouponOfferSection'
+import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
 
 export function MyListingFlowSheets() {
   const {
@@ -98,20 +99,32 @@ export function MyListingFlowSheets() {
           listing?.status === 'active' ? (
             <div className="space-y-3">
               <PrimaryButton onClick={tryEditPrice}>Edit price</PrimaryButton>
-              <OutlineButton onClick={tryCancel}>Cancel listing</OutlineButton>
+              <OutlineButton variant="destructive" onClick={tryCancel}>
+                Cancel listing
+              </OutlineButton>
+              <OutlineButton onClick={closeSheet}>Close</OutlineButton>
             </div>
           ) : (
-            <PrimaryButton onClick={closeSheet}>Done</PrimaryButton>
+            <OutlineButton onClick={closeSheet}>Close</OutlineButton>
           )
         }
       >
         {listing && offer ? (
-          <div className="space-y-3 text-sm">
-            <p className="font-semibold text-black">{offer.headline}</p>
-            <p className="text-cvs-gray-muted">
-              Listed at <strong className="text-black">${listing.price.toFixed(2)}</strong> ·{' '}
-              {listing.type === 'trade' ? 'Open to trades' : 'Sale only'}
-            </p>
+          <div className="space-y-4 text-sm">
+            <CouponOfferSection
+              label="Listed coupon"
+              tone="listing"
+              offers={[offer]}
+              marketplace
+              price={listing.price}
+              badge={
+                listing.type === 'trade'
+                  ? 'Open to trades'
+                  : listing.badge && listing.badge !== 'From your wallet'
+                    ? listing.badge
+                    : undefined
+              }
+            />
             <p className="rounded-lg border border-cvs-gray-border bg-cvs-gray-bg/80 px-3 py-2 text-xs text-cvs-gray-muted">
               Offer expires {listing.expiresAt}. While listed, this coupon stays reserved and
               won&apos;t appear on your card for in-store use.
@@ -139,7 +152,18 @@ export function MyListingFlowSheets() {
         open={activeSheet === 'myListingEditPrice'}
         onClose={closeSheet}
         footer={
-          <PrimaryButton onClick={handleSavePrice}>Save price</PrimaryButton>
+          <div className="space-y-3">
+            <PrimaryButton onClick={handleSavePrice}>Save price</PrimaryButton>
+            <OutlineButton
+              onClick={() =>
+                selectedListingId
+                  ? openSheet('myListingManage', selectedListingId)
+                  : closeSheet()
+              }
+            >
+              Cancel
+            </OutlineButton>
+          </div>
         }
       >
         {listing ? (
@@ -147,6 +171,10 @@ export function MyListingFlowSheets() {
             <p className="text-cvs-gray-muted">
               Allowed range ${band.floor.toFixed(2)}–${band.ceiling.toFixed(2)} based on coupon
               value.
+            </p>
+            <p className="text-sm">
+              <span className="text-cvs-gray-muted">Current listing price </span>
+              <span className="font-bold text-cvs-red">${listing.price.toFixed(2)}</span>
             </p>
             <label className="block">
               <span className="mb-1 block font-semibold text-black">Asking price</span>
@@ -196,7 +224,7 @@ export function MyListingFlowSheets() {
 
       <BottomSheet
         title="Can’t change listing yet"
-        size="compact"
+        size="flow"
         open={activeSheet === 'myListingBlocked'}
         onClose={closeSheet}
         footer={<PrimaryButton onClick={closeSheet}>OK</PrimaryButton>}
@@ -212,15 +240,18 @@ export function MyListingFlowSheets() {
 
       <BottomSheet
         title="Listing cancelled"
-        size="compact"
+        size="flow"
         open={activeSheet === 'myListingCancelled'}
         onClose={closeSheet}
         footer={<PrimaryButton onClick={closeSheet}>Done</PrimaryButton>}
       >
-        <p className="text-sm text-cvs-gray-muted">
-          Your coupon is back on your card. Check <strong className="text-black">On card</strong>{' '}
-          to use or list it again.
-        </p>
+        <div className="space-y-4 text-sm text-cvs-gray-muted">
+          <SuccessBanner title="Listing cancelled" />
+          <p>
+            Your coupon is back on your card. Check <strong className="text-black">On card</strong>{' '}
+            to use or list it again.
+          </p>
+        </div>
       </BottomSheet>
     </>
   )

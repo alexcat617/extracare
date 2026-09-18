@@ -20,6 +20,8 @@ interface CouponCardProps {
   marketplace?: boolean
   price?: number
   transferId?: string
+  /** Product / brand line above headline (e.g. trade context) */
+  productTitle?: string
 }
 
 export function CouponCard({
@@ -30,6 +32,7 @@ export function CouponCard({
   marketplace,
   price,
   transferId,
+  productTitle,
 }: CouponCardProps) {
   const isLastDay = badge === 'Expires soon' || badge === 'Last day'
 
@@ -63,7 +66,20 @@ export function CouponCard({
           <p className="text-xl font-bold text-cvs-red">
             ${offer.savingsAmount.toFixed(2).replace(/\.00$/, '')} off
           </p>
+          {productTitle ? (
+            <p className="text-xs font-semibold uppercase tracking-wide text-cvs-gray-muted">
+              {productTitle}
+            </p>
+          ) : null}
           <p className="text-sm font-medium text-black">{offer.headline}</p>
+          {offer.minPurchase != null ? (
+            <p className="mt-0.5 text-xs text-cvs-gray-muted">
+              Min purchase ${offer.minPurchase.toFixed(2).replace(/\.00$/, '')}
+            </p>
+          ) : null}
+          {offer.stackSummary ? (
+            <p className="mt-0.5 text-xs text-cvs-gray-muted">{offer.stackSummary}</p>
+          ) : null}
           <p className="mt-1 text-xs text-cvs-gray-muted">Exp {formatExpiry(offer.expiry)}</p>
           {transferId ? (
             <p className="mt-1 text-xs font-medium text-cvs-blue">
@@ -75,7 +91,13 @@ export function CouponCard({
           ) : null}
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div
+        className={
+          primaryAction || secondaryAction
+            ? 'mt-4 flex flex-wrap items-center gap-3'
+            : 'hidden'
+        }
+      >
         {secondaryAction ? (
           <button
             type="button"

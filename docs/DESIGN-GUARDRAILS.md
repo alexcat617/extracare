@@ -54,8 +54,8 @@
 - **Bottom sheet heights** (`prototype/src/components/BottomSheet.tsx` — do not invent per-screen heights):
   | `size` | Use |
   |--------|-----|
-  | **`flow`** | **Multi-step journeys** (FLOW-01 buy, FLOW-02 sell): every step in the same flow uses **`size="flow"`** (fixed **72dvh**) so the panel does not jump between steps. Body scrolls inside the sheet if content is taller. |
-  | **`tall`** | Sort & refine / filter panels (**90dvh**). |
+  | **`flow`** | **Journeys and standard sheets** (buy, sell, trade, listings, consent gates): use **`size="flow"`** (fixed **90dvh**) so the panel does not jump between steps. Body scrolls inside the sheet if content is taller. |
+  | **`tall`** | Same fixed height as **`flow`** (**90dvh**); use for filters / demo panel if you want the name to signal “tall content.” |
   | **`compact`** (default) | One-off gates: consent, link ExtraCare, offline, blocked consent, prototype panel. |
 - **FLOW-00:** Decline consent → **read-only browse**; buy/sell/trade re-prompt rules—no silent bypass.
 - **ExtraCare linked** before transactional CTAs (mock link flow, consistent across features).

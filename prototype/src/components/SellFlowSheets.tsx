@@ -3,7 +3,7 @@ import { normalizePrice, priceBand } from '../lib/sellPricing'
 import { usePrototype } from '../context/PrototypeContext'
 import { checkSellEligibility, formatPayoutPreview } from '../store/sellActions'
 import type { PrototypeState } from '../store/prototypeStore'
-import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
+import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
 
 export function SellFlowSheets() {
   const {
@@ -14,7 +14,6 @@ export function SellFlowSheets() {
     openSheet,
     publishWalletListing,
     navigateToMarketplace,
-    openMarketplaceListings,
   } = usePrototype()
 
   const walletOffer = state.walletOffers.find((w) => w.id === selectedWalletOfferId)
@@ -84,22 +83,10 @@ export function SellFlowSheets() {
         onClose={closeSheet}
         footer={
           <div className="space-y-3">
-            <PrimaryButton
-              onClick={() => {
-                setListingType('sale')
-                openSheet('sellListingForm')
-              }}
-            >
-              Sell on Marketplace
+            <PrimaryButton onClick={() => openSheet('sellListingForm')}>
+              List on Marketplace
             </PrimaryButton>
-            <OutlineButton
-              onClick={() => {
-                setListingType('trade')
-                openSheet('sellListingForm')
-              }}
-            >
-              List for trade
-            </OutlineButton>
+            <OutlineButton onClick={closeSheet}>Close</OutlineButton>
           </div>
         }
       >
@@ -116,7 +103,7 @@ export function SellFlowSheets() {
       </BottomSheet>
 
       <BottomSheet
-        title="Set your price"
+        title="List on Marketplace"
         size="flow"
         open={activeSheet === 'sellListingForm'}
         onClose={closeSheet}
@@ -125,46 +112,71 @@ export function SellFlowSheets() {
             <div className="space-y-3">
               <PrimaryButton onClick={handlePublish}>Publish listing</PrimaryButton>
               <OutlineButton onClick={closeSheet}>Cancel</OutlineButton>
-              <p className="text-center text-xs text-cvs-gray-muted">
-                {formatPayoutPreview(parseFloat(askingPrice) || band.suggested)}
-              </p>
             </div>
           ) : undefined
         }
       >
         {walletOffer && band ? (
-          <div className="space-y-4 text-sm">
-            {listingType === 'trade' ? (
-              <p className="rounded-lg bg-amber-50 p-3 text-amber-950">
-                Trade preferred: buyers can propose a swap. Cash buy stays available at your listed
-                price for fairness hints.
-              </p>
-            ) : null}
+          <div className="space-y-3 text-sm">
+            <p className="font-semibold text-black">{walletOffer.headline}</p>
+            <div>
+              <p className="mb-2 font-semibold text-black">Listing type</p>
+              <div
+                className="flex rounded-full bg-cvs-gray-border/60 p-1"
+                role="tablist"
+                aria-label="Listing type"
+              >
+                {(
+                  [
+                    { id: 'sale' as const, label: 'Sale only' },
+                    { id: 'trade' as const, label: 'Open to trades' },
+                  ] as const
+                ).map((opt) => {
+                  const selected = listingType === opt.id
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      onClick={() => setListingType(opt.id)}
+                      className={`flex-1 rounded-full py-2.5 text-center text-xs font-semibold transition ${
+                        selected
+                          ? 'bg-white text-black shadow-sm'
+                          : 'text-cvs-gray-muted hover:text-black'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {listingType === 'trade' ? (
+                <p className="mt-2 text-xs text-cvs-gray-muted">
+                  Buyers can propose a swap; cash buy uses your asking price.
+                </p>
+              ) : null}
+            </div>
+            <p className="text-xs text-cvs-gray-muted">
+              Expires {walletOffer.expiry} · Price ${band.floor.toFixed(2)}–$
+              {band.ceiling.toFixed(2)}
+            </p>
             {!state.sellerHasPublishedBefore ? (
-              <p className="rounded-lg border border-cvs-blue/30 bg-blue-50 p-3 text-cvs-blue-dark">
-                <strong>First listing?</strong> Your offer is held in escrow on Marketplace—not on
-                your card—until a buyer purchases or you cancel in My listings (coming soon).
+              <p className="text-xs text-cvs-blue-dark">
+                First listing: your offer stays in escrow until it sells or you cancel.
               </p>
             ) : null}
-            <ul className="space-y-1 text-cvs-gray-muted">
-              <li>Expires {walletOffer.expiry}</li>
-              <li>
-                Allowed range ${band.floor.toFixed(2)}–${band.ceiling.toFixed(2)} (20–80% of $
-                {walletOffer.savingsAmount} savings)
-              </li>
-            </ul>
-            <button
-              type="button"
-              onClick={applySuggestedPrice}
-              className="flex min-h-[48px] w-full flex-col items-center justify-center rounded-xl border border-cvs-gray-border bg-cvs-gray-bg px-4 py-2.5 text-center"
-            >
-              <span className="text-base font-semibold text-cvs-gray-muted">
-                Apply suggested price · ${band.suggested.toFixed(2)}
-              </span>
-              <span className="mt-0.5 text-xs text-cvs-gray-muted">Fills the field only—not publish</span>
-            </button>
             <label className="block">
-              <span className="mb-2 block font-semibold text-black">Asking price</span>
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <span className="font-semibold text-black">Asking price</span>
+                <button
+                  type="button"
+                  onClick={applySuggestedPrice}
+                  className="min-h-[44px] shrink-0 text-sm font-semibold text-cvs-blue"
+                >
+                  Use ${band.suggested.toFixed(2)} suggested
+                </button>
+              </div>
               <input
                 type="number"
                 inputMode="decimal"
@@ -180,13 +192,18 @@ export function SellFlowSheets() {
                   priceError ? 'border-cvs-red' : 'border-cvs-gray-border'
                 }`}
                 aria-invalid={priceError}
+                aria-describedby="sell-payout-hint"
               />
             </label>
             {priceError ? (
               <p className="text-sm text-cvs-red" role="alert">
-                Enter a price in the allowed range, or tap Use suggested price above.
+                Enter a price between ${band.floor.toFixed(2)} and ${band.ceiling.toFixed(2)}, or use
+                suggested.
               </p>
             ) : null}
+            <p id="sell-payout-hint" className="text-xs text-cvs-gray-muted">
+              {formatPayoutPreview(parseFloat(askingPrice) || band.suggested)}
+            </p>
           </div>
         ) : null}
       </BottomSheet>
@@ -216,21 +233,17 @@ export function SellFlowSheets() {
             >
               View on Marketplace
             </PrimaryButton>
-            <OutlineButton
-              onClick={() => {
-                closeSheet()
-                openMarketplaceListings()
-              }}
-            >
-              My listings
-            </OutlineButton>
+            <OutlineButton onClick={closeSheet}>Close</OutlineButton>
           </div>
         }
       >
-        <p className="text-sm text-cvs-gray-muted">
-          Your offer is reserved and buyers can find it under Savings → Marketplace. You’ll get paid
-          after a protected purchase completes.
-        </p>
+        <div className="space-y-4 text-sm text-cvs-gray-muted">
+          <SuccessBanner title="Your listing is live" />
+          <p>
+            Your offer is reserved and buyers can find it under Savings → Marketplace. You’ll get
+            paid after a protected purchase completes.
+          </p>
+        </div>
       </BottomSheet>
 
     </>

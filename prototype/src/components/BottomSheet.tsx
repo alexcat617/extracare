@@ -1,16 +1,18 @@
 import type { ReactNode } from 'react'
 
 /**
- * compact — one-off sheets (link gate, errors); height follows content.
- * flow — multi-step journey (sell/buy); fixed height so steps don’t jump.
- * tall — filters/refine; 90dvh.
+ * compact — rare one-offs; height follows content (max 90vh).
+ * flow — journeys and standard sheets; fixed 90dvh so steps don’t jump.
+ * tall — alias of flow (filters/refine); kept for call-site clarity.
  */
 export type BottomSheetSize = 'compact' | 'flow' | 'tall'
 
+const SHEET_FIXED_HEIGHT = 'h-[90dvh] max-h-[90dvh]'
+
 export const BOTTOM_SHEET_HEIGHT: Record<BottomSheetSize, string> = {
   compact: 'max-h-[90vh]',
-  flow: 'h-[72dvh] max-h-[72dvh]',
-  tall: 'h-[90dvh] max-h-[90dvh]',
+  flow: SHEET_FIXED_HEIGHT,
+  tall: SHEET_FIXED_HEIGHT,
 }
 
 interface BottomSheetProps {
@@ -30,7 +32,7 @@ export function BottomSheet({
   children,
   footer,
   ariaLabel,
-  size = 'compact',
+  size = 'flow',
 }: BottomSheetProps) {
   if (!open) return null
 
@@ -90,18 +92,51 @@ export function PrimaryButton({
   )
 }
 
+/** Success confirmation sheets — green status banner */
+export function SuccessBanner({
+  title,
+  children,
+}: {
+  title: string
+  children?: ReactNode
+}) {
+  return (
+    <div
+      className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-950"
+      role="status"
+    >
+      <p className="flex items-center gap-3 font-semibold text-green-900">
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-600 text-lg text-white"
+          aria-hidden
+        >
+          ✓
+        </span>
+        <span className="text-base">{title}</span>
+      </p>
+      {children ? <div className="mt-2 pl-12 text-sm text-green-900/90">{children}</div> : null}
+    </div>
+  )
+}
+
 export function OutlineButton({
   children,
   onClick,
+  variant = 'default',
 }: {
   children: ReactNode
   onClick?: () => void
+  variant?: 'default' | 'destructive'
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-full border-2 border-cvs-blue py-3.5 text-center text-base font-semibold text-cvs-blue"
+      className={`w-full rounded-full border-2 py-3.5 text-center text-base font-semibold ${
+        variant === 'destructive'
+          ? 'border-cvs-red/30 bg-red-50 text-cvs-red'
+          : 'border-cvs-blue text-cvs-blue'
+      }`}
     >
       {children}
     </button>

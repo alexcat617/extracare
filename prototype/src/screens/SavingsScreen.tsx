@@ -84,17 +84,12 @@ export function SavingsScreen() {
   return (
     <div className="pb-28">
       <header className="sticky top-0 z-20 border-b border-cvs-gray-border bg-cvs-gray-bg px-4 pb-3 pt-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-black">Savings</h1>
           <div className="flex gap-3">
             <button type="button" className="text-xl" aria-label="Chat with CVS">💬</button>
             <button type="button" className="text-xl" aria-label="Cart">🛒</button>
           </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-full border border-cvs-gray-border bg-white px-4 py-2.5">
-          <span aria-hidden>🔍</span>
-          <span className="text-sm text-cvs-gray-muted">Find deals</span>
-          <button type="button" className="ml-auto text-lg" aria-label="Scan barcode">📷</button>
         </div>
       </header>
 
@@ -241,14 +236,6 @@ export function SavingsScreen() {
             ))
         ) : null}
       </div>
-
-      <button
-        type="button"
-        className="fixed bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-full bg-cvs-blue px-6 py-3 text-sm font-semibold text-white shadow-lg"
-        aria-label="Scan in store"
-      >
-        Scan in store
-      </button>
     </div>
   )
 }

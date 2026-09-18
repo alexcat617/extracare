@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { computeExtraBucksBalances } from '../lib/extraBucksBalance'
 import { calcOrderTotal } from '../lib/pricing'
 import { usePrototype } from '../context/PrototypeContext'
 import { getOfferForListing } from '../store/prototypeStore'
-import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
+import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
 import { MobileRadioCard } from './MobileFormControls'
 
 function channelLabel(channel: string): string {
@@ -30,6 +31,7 @@ export function BuyFlowSheets() {
   const listing = state.listings.find((l) => l.id === selectedListingId)
   const listingOffer = listing ? getOfferForListing(state.offers, listing) : undefined
   const order = listing ? calcOrderTotal(listing.price) : null
+  const extraBucks = computeExtraBucksBalances(state)
 
   const startBuy = () => {
     tryTransactionalAction(() => {
@@ -178,7 +180,7 @@ export function BuyFlowSheets() {
                 checked={paymentMethod === 'extrabucks'}
                 onSelect={() => setPaymentMethod('extrabucks')}
                 label="ExtraBucks balance"
-                hint="Mock wallet balance"
+                hint={`$${extraBucks.available.toFixed(2)} available · use for this purchase`}
               />
               <MobileRadioCard
                 name="pay"
@@ -212,8 +214,8 @@ export function BuyFlowSheets() {
           </div>
         }
       >
-        <div className="space-y-3 text-sm text-cvs-gray-muted">
-          <p className="text-base font-semibold text-black">Protected purchase complete</p>
+        <div className="space-y-4 text-sm text-cvs-gray-muted">
+          <SuccessBanner title="Protected purchase complete" />
           <p>
             Your payment was released to the seller after we confirmed the offer on your ExtraCare
             card.

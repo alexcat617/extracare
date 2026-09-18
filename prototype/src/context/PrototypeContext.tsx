@@ -11,6 +11,7 @@ import {
   loadState,
   persistState,
   recordConsent,
+  applyMyListingsDemoSeed,
   reseedListingsAndWalletState,
   resetAllPrototypeData,
   type PrototypeState,
@@ -38,11 +39,10 @@ import {
 } from '../store/listingManageActions'
 import {
   applyTradeProposalSent,
-  confirmTradeParty,
   createTradeProposal,
   sellerRespondTrade,
-  updateBuyerTradeBundle,
 } from '../store/tradeActions'
+import { applyDemoPreset, type DemoPreset } from '../lib/demoPresets'
 
 export type SheetId =
   | 'consent'
@@ -63,11 +63,8 @@ export type SheetId =
   | 'tradePickBundle'
   | 'tradeProposalSent'
   | 'tradeSellerReview'
-  | 'tradeBuyerConfirm'
-  | 'tradeSellerConfirm'
   | 'tradeSuccess'
   | 'tradeDeclined'
-  | 'tradeExpired'
   | 'myListingManage'
   | 'myListingEditPrice'
   | 'myListingCancelConfirm'
@@ -90,6 +87,7 @@ interface PrototypeContextValue {
   setDemoNextPurchaseOutcome: (outcome: DemoPurchaseOutcome) => void
   setSellerDemoMode: (mode: SellerDemoMode) => void
   runDataAction: (action: DataAction) => void
+  runDemoPreset: (preset: DemoPreset) => void
   beginSellFromWallet: (walletOfferId: string) => void
   publishWalletListing: (
     walletOfferId: string,
@@ -97,14 +95,12 @@ interface PrototypeContextValue {
     listingType?: ListingType,
   ) => PublishOutcome
   beginTradeProposal: (listingId: string) => void
-  submitTradeBundle: (walletOfferIds: string[], message?: string) => 'sent' | 'updated' | 'error'
+  submitTradeBundle: (walletOfferIds: string[]) => 'sent' | 'error'
   openTradeSellerReview: (proposalId?: string) => void
   respondTradeAsSeller: (
-    action: 'accept' | 'decline' | 'counter',
-    sellerNote?: string,
+    action: 'accept' | 'decline',
+    proposalId?: string,
   ) => void
-  confirmTrade: (party: 'buyer' | 'seller') => void
-  setDemoTradeConfirmTimeout: (on: boolean) => void
   acceptMarketplaceRules: () => void
   declineMarketplaceRules: () => void
   openSheet: (sheet: SheetId, listingId?: string) => void
@@ -134,7 +130,12 @@ export type MainTab = 'home' | 'savings' | 'shop' | 'photo' | 'orders'
 export type SavingsSegment = 'all' | 'on-card' | 'for-you' | 'marketplace'
 export type MarketplaceView = 'browse' | 'activity' | 'listings'
 export type ConsentMode = 'not-given' | 'given' | 'browse-only'
-export type DataAction = 'undo-purchases' | 'reseed' | 'factory-reset' | 'open-marketplace'
+export type DataAction =
+  | 'undo-purchases'
+  | 'reseed'
+  | 'seed-my-listings'
+  | 'factory-reset'
+  | 'open-marketplace'
 export type SellerDemoMode = 'eligible' | 'new-account' | 'listing-cap' | 'no-phone'
 
 const PrototypeContext = createContext<PrototypeContextValue | null>(null)
@@ -252,6 +253,10 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
         patchState((prev) => reseedListingsAndWalletState(prev))
         return
       }
+      if (action === 'seed-my-listings') {
+        patchState((prev) => applyMyListingsDemoSeed(prev))
+        return
+      }
       if (action === 'factory-reset') {
         const fresh = resetAllPrototypeData()
         setState(fresh)
@@ -265,6 +270,30 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       }
     },
     [patchState],
+  )
+
+  const runDemoPreset = useCallback(
+    (preset: DemoPreset) => {
+      setState((prev) => {
+        const outcome = applyDemoPreset(prev, preset)
+        if (preset !== 'fresh-start') {
+          persistState(outcome.state)
+        }
+        queueMicrotask(() => {
+          setMainTab('savings')
+          setSavingsSegment(outcome.savingsSegment)
+          setMarketplaceView(outcome.marketplaceView)
+          setSelectedListingId(outcome.selectedListingId)
+          if (outcome.openSheet) {
+            setActiveSheet(outcome.openSheet)
+          } else {
+            setActiveSheet(null)
+          }
+        })
+        return outcome.state
+      })
+    },
+    [],
   )
 
   const openSheet = useCallback((sheet: SheetId, listingId?: string) => {
@@ -443,23 +472,11 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   )
 
   const submitTradeBundle = useCallback(
-    (walletOfferIds: string[], message?: string): 'sent' | 'updated' | 'error' => {
+    (walletOfferIds: string[]): 'sent' | 'error' => {
       if (!selectedListingId) return 'error'
-      let result: 'sent' | 'updated' | 'error' = 'error'
+      let result: 'sent' | 'error' = 'error'
       patchState((prev) => {
-        const activeId = prev.activeTradeProposalId
-        const pendingBuyer = activeId
-          ? prev.tradeProposals.find((p) => p.id === activeId && p.status === 'pending_buyer')
-          : undefined
-
-        if (pendingBuyer) {
-          const updated = updateBuyerTradeBundle(prev, pendingBuyer.id, walletOfferIds, message)
-          if (!updated.ok) return prev
-          result = 'updated'
-          return updated.state
-        }
-
-        const created = createTradeProposal(prev, selectedListingId, walletOfferIds, message)
+        const created = createTradeProposal(prev, selectedListingId, walletOfferIds)
         if (!created.ok) return prev
         result = 'sent'
         return applyTradeProposalSent(prev, created.proposal)
@@ -484,45 +501,21 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   )
 
   const respondTradeAsSeller = useCallback(
-    (action: 'accept' | 'decline' | 'counter', sellerNote?: string) => {
-      const proposalId = state.activeTradeProposalId
-      if (!proposalId) return
+    (action: 'accept' | 'decline', explicitProposalId?: string) => {
       patchState((prev) => {
-        const result = sellerRespondTrade(prev, proposalId, action, sellerNote)
+        const proposalId = explicitProposalId ?? prev.activeTradeProposalId
+        if (!proposalId) return prev
+        const result = sellerRespondTrade(prev, proposalId, action)
         if (!result.ok) return prev
+        const listingId = result.state.tradeProposals.find((p) => p.id === proposalId)?.listingId
+        if (listingId) queueMicrotask(() => setSelectedListingId(listingId))
+        const nextSheet: SheetId =
+          action === 'accept' ? 'tradeSuccess' : 'tradeDeclined'
+        queueMicrotask(() => openSheet(nextSheet))
         return result.state
       })
-      const listingId = state.tradeProposals.find((p) => p.id === proposalId)?.listingId
-      if (listingId) setSelectedListingId(listingId)
-      if (action === 'accept') openSheet('tradeBuyerConfirm')
-      else if (action === 'decline') openSheet('tradeDeclined')
-      else openSheet('tradePickBundle')
     },
-    [state.activeTradeProposalId, patchState, openSheet],
-  )
-
-  const confirmTrade = useCallback(
-    (party: 'buyer' | 'seller') => {
-      const proposalId = state.activeTradeProposalId
-      if (!proposalId) return
-      let nextSheet: SheetId = null
-      patchState((prev) => {
-        const result = confirmTradeParty(prev, proposalId, party)
-        if (!result.ok) return prev
-        const proposal = result.state.tradeProposals.find((p) => p.id === proposalId)
-        if (proposal?.status === 'expired') nextSheet = 'tradeExpired'
-        else if (proposal?.status === 'completed') nextSheet = 'tradeSuccess'
-        else if (party === 'buyer') nextSheet = 'tradeSellerConfirm'
-        return result.state
-      })
-      if (nextSheet) openSheet(nextSheet)
-    },
-    [state.activeTradeProposalId, patchState, openSheet],
-  )
-
-  const setDemoTradeConfirmTimeout = useCallback(
-    (on: boolean) => patchState((prev) => ({ ...prev, demoTradeConfirmTimeout: on })),
-    [patchState],
+    [patchState, openSheet],
   )
 
   const publishWalletListing = useCallback(
@@ -558,14 +551,13 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       acceptMarketplaceRules,
       declineMarketplaceRules,
       runDataAction,
+      runDemoPreset,
       beginSellFromWallet,
       publishWalletListing,
       beginTradeProposal,
       submitTradeBundle,
       openTradeSellerReview,
       respondTradeAsSeller,
-      confirmTrade,
-      setDemoTradeConfirmTimeout,
       openSheet,
       closeSheet,
       tryTransactionalAction,
@@ -598,14 +590,13 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       acceptMarketplaceRules,
       declineMarketplaceRules,
       runDataAction,
+      runDemoPreset,
       beginSellFromWallet,
       publishWalletListing,
       beginTradeProposal,
       submitTradeBundle,
       openTradeSellerReview,
       respondTradeAsSeller,
-      confirmTrade,
-      setDemoTradeConfirmTimeout,
       openSheet,
       closeSheet,
       tryTransactionalAction,
