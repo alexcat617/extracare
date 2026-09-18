@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CouponCard } from '../components/CouponCard'
+import { MarketplaceFilterSheet } from '../components/MarketplaceFilterSheet'
 import { SegmentBar } from '../components/SegmentBar'
 import { usePrototype } from '../context/PrototypeContext'
+import {
+  DEFAULT_MARKETPLACE_FILTERS,
+  filterListings,
+  type MarketplaceFilters,
+} from '../lib/marketplaceFilters'
 import { getOfferForListing } from '../store/prototypeStore'
 
 export function SavingsScreen() {
@@ -12,9 +18,13 @@ export function SavingsScreen() {
     navigateToMarketplace,
     openSheet,
     tryTransactionalAction,
-    reseedListingsAndWallet,
+    runDataAction,
   } = usePrototype()
   const [loading, setLoading] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [marketplaceFilters, setMarketplaceFilters] = useState<MarketplaceFilters>(
+    DEFAULT_MARKETPLACE_FILTERS,
+  )
 
   useEffect(() => {
     if (savingsSegment !== 'marketplace') return
@@ -44,9 +54,14 @@ export function SavingsScreen() {
   }, [savingsSegment])
 
   const activeListings = useMemo(
-    () => state.listings.filter((l) => l.status === 'active'),
-    [state.listings],
+    () => filterListings(state.listings, state.offers, marketplaceFilters),
+    [state.listings, state.offers, marketplaceFilters],
   )
+
+  const filtersActive =
+    marketplaceFilters.category !== 'all' ||
+    marketplaceFilters.expiresSoon ||
+    marketplaceFilters.discountType !== 'all'
 
   const browseReadOnly = !state.marketplaceConsent
 
@@ -91,12 +106,26 @@ export function SavingsScreen() {
         />
 
         <div className="mt-3 flex items-center justify-between">
-          <button
-            type="button"
-            className="rounded-full border-2 border-cvs-blue px-4 py-1.5 text-sm font-semibold text-cvs-blue"
-          >
-            Sort &amp; refine
-          </button>
+          {savingsSegment === 'marketplace' ? (
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              className={`rounded-full border-2 px-4 py-1.5 text-sm font-semibold ${
+                filtersActive
+                  ? 'border-cvs-blue bg-cvs-blue text-white'
+                  : 'border-cvs-blue text-cvs-blue'
+              }`}
+            >
+              Sort &amp; refine
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="rounded-full border-2 border-cvs-blue px-4 py-1.5 text-sm font-semibold text-cvs-blue"
+            >
+              Sort &amp; refine
+            </button>
+          )}
           <span className="text-sm text-cvs-gray-muted">
             {dealCount} deal{dealCount === 1 ? '' : 's'}
           </span>
@@ -132,7 +161,11 @@ export function SavingsScreen() {
 
         {!loading && savingsSegment === 'marketplace' ? (
           activeListings.length === 0 ? (
-            <EmptyMarketplace onReseed={reseedListingsAndWallet} />
+            <EmptyMarketplace
+              onReseed={() => runDataAction('reseed')}
+              filtered={filtersActive}
+              onClearFilters={() => setMarketplaceFilters(DEFAULT_MARKETPLACE_FILTERS)}
+            />
           ) : (
             activeListings.map((listing) => {
               const offer = getOfferForListing(state.offers, listing)
@@ -168,6 +201,7 @@ export function SavingsScreen() {
               <CouponCard
                 key={offer.id}
                 offer={offer}
+                transferId={offer.transferId}
                 secondaryAction={{
                   label: 'Shop now',
                   onClick: () => {},
@@ -200,6 +234,13 @@ export function SavingsScreen() {
         ) : null}
       </div>
 
+      <MarketplaceFilterSheet
+        open={filtersOpen}
+        filters={marketplaceFilters}
+        onChange={setMarketplaceFilters}
+        onClose={() => setFiltersOpen(false)}
+      />
+
       <button
         type="button"
         className="fixed bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-full bg-cvs-blue px-6 py-3 text-sm font-semibold text-white shadow-lg"
@@ -211,13 +252,34 @@ export function SavingsScreen() {
   )
 }
 
-function EmptyMarketplace({ onReseed }: { onReseed: () => void }) {
+function EmptyMarketplace({
+  onReseed,
+  filtered,
+  onClearFilters,
+}: {
+  onReseed: () => void
+  filtered: boolean
+  onClearFilters: () => void
+}) {
   return (
     <div className="rounded-[var(--radius-card)] border border-cvs-gray-border bg-white p-6 text-center">
-      <p className="font-semibold text-black">No listings yet</p>
-      <p className="mt-2 text-sm text-cvs-gray-muted">
-        Seed data loads automatically. Use Prototype → Reseed if needed.
+      <p className="font-semibold text-black">
+        {filtered ? 'No listings match your filters' : 'No listings yet'}
       </p>
+      <p className="mt-2 text-sm text-cvs-gray-muted">
+        {filtered
+          ? 'Try clearing filters or browse all marketplace deals.'
+          : 'Seed data loads automatically. Use Prototype → Reseed if needed.'}
+      </p>
+      {filtered ? (
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="mt-4 text-sm font-semibold text-cvs-blue"
+        >
+          Clear filters
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={onReseed}
