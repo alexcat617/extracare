@@ -62,7 +62,6 @@ export type SheetId =
   | 'tradeSuccess'
   | 'tradeDeclined'
   | 'tradeExpired'
-  | 'feat04MyListingsStub'
   | null
 
 export type PublishOutcome = 'success' | 'price' | 'ineligible' | 'error'
@@ -102,6 +101,9 @@ interface PrototypeContextValue {
   tryTransactionalAction: (action: () => void) => void
   confirmPurchase: (listingId: string) => Promise<PurchaseOutcome>
   navigateToMarketplace: () => void
+  marketplaceView: MarketplaceView
+  openMarketplaceActivity: () => void
+  closeMarketplaceActivity: () => void
   goToWallet: () => void
   savingsSegment: SavingsSegment
   setSavingsSegment: (seg: SavingsSegment) => void
@@ -111,6 +113,7 @@ interface PrototypeContextValue {
 
 export type MainTab = 'home' | 'savings' | 'shop' | 'photo' | 'orders'
 export type SavingsSegment = 'all' | 'on-card' | 'for-you' | 'marketplace'
+export type MarketplaceView = 'browse' | 'activity'
 export type ConsentMode = 'not-given' | 'given' | 'browse-only'
 export type DataAction = 'undo-purchases' | 'reseed' | 'factory-reset' | 'open-marketplace'
 export type SellerDemoMode = 'eligible' | 'new-account' | 'listing-cap' | 'no-phone'
@@ -124,6 +127,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [selectedWalletOfferId, setSelectedWalletOfferId] = useState<string | null>(null)
   const [mainTab, setMainTab] = useState<MainTab>('savings')
   const [savingsSegment, setSavingsSegment] = useState<SavingsSegment>('all')
+  const [marketplaceView, setMarketplaceView] = useState<MarketplaceView>('browse')
 
   const patchState = useCallback((updater: (prev: PrototypeState) => PrototypeState) => {
     setState((prev) => {
@@ -299,6 +303,17 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const navigateToMarketplace = useCallback(() => {
     setMainTab('savings')
     setSavingsSegment('marketplace')
+    setMarketplaceView('browse')
+  }, [])
+
+  const openMarketplaceActivity = useCallback(() => {
+    setMainTab('savings')
+    setSavingsSegment('marketplace')
+    setMarketplaceView('activity')
+  }, [])
+
+  const closeMarketplaceActivity = useCallback(() => {
+    setMarketplaceView('browse')
   }, [])
 
   const goToWallet = useCallback(() => {
@@ -475,6 +490,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       tryTransactionalAction,
       confirmPurchase,
       navigateToMarketplace,
+      marketplaceView,
+      openMarketplaceActivity,
+      closeMarketplaceActivity,
       goToWallet,
       savingsSegment,
       setSavingsSegment,
@@ -507,6 +525,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       tryTransactionalAction,
       confirmPurchase,
       navigateToMarketplace,
+      marketplaceView,
+      openMarketplaceActivity,
+      closeMarketplaceActivity,
       goToWallet,
       savingsSegment,
       mainTab,
