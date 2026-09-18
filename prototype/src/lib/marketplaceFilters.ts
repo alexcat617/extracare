@@ -4,16 +4,24 @@ import { getOfferForListing } from '../store/prototypeStore'
 
 export type DiscountFilter = 'all' | 'dollar-off' | 'threshold'
 
+export type MarketplaceSort =
+  | 'recommended'
+  | 'price-low'
+  | 'price-high'
+  | 'savings-high'
+
 export interface MarketplaceFilters {
   category: OfferCategory | 'all'
   expiresSoon: boolean
   discountType: DiscountFilter
+  sort: MarketplaceSort
 }
 
 export const DEFAULT_MARKETPLACE_FILTERS: MarketplaceFilters = {
   category: 'all',
   expiresSoon: false,
   discountType: 'all',
+  sort: 'recommended',
 }
 
 function isExpiresSoon(offer: Offer, listing: Listing): boolean {
@@ -29,12 +37,34 @@ function matchesDiscountType(offer: Offer, discountType: DiscountFilter): boolea
   return offer.category !== 'threshold'
 }
 
+function compareListings(
+  a: Listing,
+  b: Listing,
+  offers: Offer[],
+  sort: MarketplaceSort,
+): number {
+  if (sort === 'recommended') return 0
+  const offerA = getOfferForListing(offers, a)
+  const offerB = getOfferForListing(offers, b)
+  if (!offerA || !offerB) return 0
+  switch (sort) {
+    case 'price-low':
+      return a.price - b.price
+    case 'price-high':
+      return b.price - a.price
+    case 'savings-high':
+      return offerB.savingsAmount - offerA.savingsAmount
+    default:
+      return 0
+  }
+}
+
 export function filterListings(
   listings: Listing[],
   offers: Offer[],
   filters: MarketplaceFilters,
 ): Listing[] {
-  return listings.filter((listing) => {
+  const filtered = listings.filter((listing) => {
     if (listing.status !== 'active') return false
     const offer = getOfferForListing(offers, listing)
     if (!offer) return false
@@ -43,6 +73,8 @@ export function filterListings(
     if (!matchesDiscountType(offer, filters.discountType)) return false
     return true
   })
+  if (filters.sort === 'recommended') return filtered
+  return [...filtered].sort((a, b) => compareListings(a, b, offers, filters.sort))
 }
 
 export function categoryLabel(cat: OfferCategory | 'all'): string {
@@ -56,4 +88,14 @@ export function categoryLabel(cat: OfferCategory | 'all'): string {
     household: 'Household',
   }
   return map[cat]
+}
+
+export function sortLabel(sort: MarketplaceSort): string {
+  const map: Record<MarketplaceSort, string> = {
+    recommended: 'Recommended',
+    'price-low': 'Price: low to high',
+    'price-high': 'Price: high to low',
+    'savings-high': 'Highest savings',
+  }
+  return map[sort]
 }

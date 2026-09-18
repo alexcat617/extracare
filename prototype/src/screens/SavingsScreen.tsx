@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ADD_TO_CARD_SUCCESS_MS, AddToCardButton } from '../components/AddToCardButton'
 import { CouponCard } from '../components/CouponCard'
 import { EmptyStateCard, EmptyStateLink } from '../components/EmptyStateCard'
+import { MarketplaceFilterSheet } from '../components/MarketplaceFilterSheet'
 import { MarketplaceTabBar } from '../components/MarketplaceTabBar'
 import { SegmentBar } from '../components/SegmentBar'
 import { usePrototype } from '../context/PrototypeContext'
@@ -39,6 +40,7 @@ export function SavingsScreen() {
   const [marketplaceFilters, setMarketplaceFilters] = useState<MarketplaceFilters>(
     DEFAULT_MARKETPLACE_FILTERS,
   )
+  const [marketplaceFiltersOpen, setMarketplaceFiltersOpen] = useState(false)
 
   useEffect(() => {
     if (savingsSegment !== 'marketplace') return
@@ -101,7 +103,8 @@ export function SavingsScreen() {
   const filtersActive =
     marketplaceFilters.category !== 'all' ||
     marketplaceFilters.expiresSoon ||
-    marketplaceFilters.discountType !== 'all'
+    marketplaceFilters.discountType !== 'all' ||
+    marketplaceFilters.sort !== 'recommended'
 
   const browseReadOnly = !state.marketplaceConsent
 
@@ -150,6 +153,27 @@ export function SavingsScreen() {
         {savingsSegment === 'marketplace' ? (
           <>
             <MarketplaceTabBar />
+            {marketplaceView === 'browse' ? (
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMarketplaceFiltersOpen(true)}
+                  className="rounded-full border-2 border-cvs-blue px-4 py-1.5 text-sm font-semibold text-cvs-blue"
+                  aria-expanded={marketplaceFiltersOpen}
+                >
+                  Sort &amp; refine
+                  {filtersActive ? (
+                    <span className="sr-only"> (filters applied)</span>
+                  ) : null}
+                  {filtersActive ? (
+                    <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-cvs-blue align-middle" aria-hidden />
+                  ) : null}
+                </button>
+                <span className="text-sm text-cvs-gray-muted">
+                  {browseListings.length} listing{browseListings.length === 1 ? '' : 's'}
+                </span>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="mt-3 flex items-center justify-between gap-2">
@@ -316,6 +340,13 @@ export function SavingsScreen() {
           )
         ) : null}
       </div>
+
+      <MarketplaceFilterSheet
+        open={marketplaceFiltersOpen}
+        filters={marketplaceFilters}
+        onChange={setMarketplaceFilters}
+        onClose={() => setMarketplaceFiltersOpen(false)}
+      />
     </div>
   )
 }

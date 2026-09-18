@@ -4,6 +4,8 @@ import {
   DEFAULT_MARKETPLACE_FILTERS,
   type DiscountFilter,
   type MarketplaceFilters,
+  type MarketplaceSort,
+  sortLabel,
 } from '../lib/marketplaceFilters'
 import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
 
@@ -50,6 +52,33 @@ export function MarketplaceFilterSheet({
       }
     >
       <div className="space-y-5 text-sm">
+        <fieldset>
+          <legend className="mb-2 font-semibold text-black">Sort by</legend>
+          <div className="flex flex-col gap-2">
+            {(
+              [
+                'recommended',
+                'price-low',
+                'price-high',
+                'savings-high',
+              ] as MarketplaceSort[]
+            ).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onChange({ ...filters, sort: value })}
+                className={`rounded-xl border px-4 py-3 text-left text-sm font-semibold ${
+                  filters.sort === value
+                    ? 'border-cvs-blue bg-blue-50 text-cvs-blue-dark'
+                    : 'border-cvs-gray-border text-black'
+                }`}
+              >
+                {sortLabel(value)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
         <fieldset>
           <legend className="mb-2 font-semibold text-black">Category</legend>
           <div className="flex flex-wrap gap-2">
