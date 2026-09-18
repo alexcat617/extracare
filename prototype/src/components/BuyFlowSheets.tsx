@@ -20,6 +20,7 @@ export function BuyFlowSheets() {
     openSheet,
     tryTransactionalAction,
     confirmPurchase,
+    beginTradeProposal,
     goToWallet,
   } = usePrototype()
 
@@ -65,14 +66,25 @@ export function BuyFlowSheets() {
                 <p className="text-center text-sm font-medium text-cvs-red" role="status">
                   No longer available
                 </p>
+              ) : listing.type === 'trade' ? (
+                <PrimaryButton onClick={() => beginTradeProposal(listing.id)}>
+                  Propose trade
+                </PrimaryButton>
               ) : (
                 <PrimaryButton onClick={startBuy}>
                   Buy — ${listing.price.toFixed(2)}
                 </PrimaryButton>
               )}
-              <OutlineButton onClick={() => openSheet('feat03TradeStub')}>
-                Propose trade (coming soon)
-              </OutlineButton>
+              {listing.status === 'active' && listing.type !== 'trade' ? (
+                <OutlineButton onClick={() => beginTradeProposal(listing.id)}>
+                  Propose trade
+                </OutlineButton>
+              ) : null}
+              {listing.type === 'trade' ? (
+                <OutlineButton onClick={startBuy}>
+                  Buy instead — ${listing.price.toFixed(2)}
+                </OutlineButton>
+              ) : null}
             </div>
           ) : undefined
         }
@@ -102,10 +114,17 @@ export function BuyFlowSheets() {
                 />
               </ul>
             </div>
-            <p className="rounded-lg bg-blue-50 p-3 text-xs text-cvs-blue-dark">
-              Protected purchase: payment stays in CVS escrow until this offer appears in your
-              Deals wallet. No scannable barcode on this screen.
-            </p>
+            {listing.type === 'trade' ? (
+              <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-950">
+                Trade preferred: seller is open to swapping coupons. You can still buy with cash if
+                you prefer.
+              </p>
+            ) : (
+              <p className="rounded-lg bg-blue-50 p-3 text-xs text-cvs-blue-dark">
+                Protected purchase: payment stays in CVS escrow until this offer appears in your
+                Deals wallet. No scannable barcode on this screen.
+              </p>
+            )}
             {listing.badge ? (
               <p className="text-xs text-amber-800" role="status">
                 {listing.badge} — popular listings may sell quickly.
@@ -250,18 +269,6 @@ export function BuyFlowSheets() {
         </p>
       </BottomSheet>
 
-      <BottomSheet
-        title="Propose trade"
-        size="flow"
-        open={activeSheet === 'feat03TradeStub'}
-        onClose={closeSheet}
-        footer={<OutlineButton onClick={closeSheet}>Close</OutlineButton>}
-      >
-        <p className="text-sm text-cvs-gray-muted">
-          <strong className="text-black">FEAT-03 stub:</strong> Trade flow (dual confirm, swap) ships
-          in a later build. Use Buy for the Wave A demo path.
-        </p>
-      </BottomSheet>
     </>
   )
 }

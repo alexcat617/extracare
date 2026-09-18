@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import type { ConsentMode, DataAction, SellerDemoMode } from '../context/PrototypeContext'
 import { usePrototype } from '../context/PrototypeContext'
 import type { DemoPurchaseOutcome } from '../store/prototypeStore'
+import { pendingSellerProposals } from '../store/tradeActions'
 import { BottomSheet } from './BottomSheet'
 
 function consentModeFromState(
@@ -18,6 +19,7 @@ const selectClass =
 
 export function DemoControls() {
   const [open, setOpen] = useState(false)
+  const [tradeDemoKey, setTradeDemoKey] = useState(0)
   const {
     state,
     setConsentMode,
@@ -25,6 +27,9 @@ export function DemoControls() {
     setOfflineMode,
     setDemoNextPurchaseOutcome,
     setSellerDemoMode,
+    setDemoTradeConfirmTimeout,
+    openTradeSellerReview,
+    confirmTrade,
     runDataAction,
   } = usePrototype()
 
@@ -37,6 +42,7 @@ export function DemoControls() {
         : 'eligible'
 
   const activeListings = state.listings.filter((l) => l.status === 'active')
+  const sellerTradeInbox = pendingSellerProposals(state).length
 
   const handleDataAction = (value: string) => {
     if (!value) return
@@ -111,6 +117,34 @@ export function DemoControls() {
           </DemoSelect>
 
           <DemoSelect
+            key={tradeDemoKey}
+            label="Trade demo"
+            value=""
+            onChange={(v) => {
+              if (!v) return
+              if (v === 'seller-inbox') {
+                openTradeSellerReview()
+                setOpen(false)
+              }
+              if (v === 'seller-confirm') {
+                confirmTrade('seller')
+                setOpen(false)
+              }
+              if (v === 'timeout-on') setDemoTradeConfirmTimeout(true)
+              if (v === 'timeout-off') setDemoTradeConfirmTimeout(false)
+              setTradeDemoKey((k) => k + 1)
+            }}
+          >
+            <option value="">Choose trade action…</option>
+            <option value="seller-inbox" disabled={sellerTradeInbox === 0}>
+              Open seller review ({sellerTradeInbox} pending)
+            </option>
+            <option value="seller-confirm">Confirm as seller (Jordan)</option>
+            <option value="timeout-on">Next seller confirm → timeout</option>
+            <option value="timeout-off">Clear trade timeout flag</option>
+          </DemoSelect>
+
+          <DemoSelect
             label="Seller eligibility (Jordan)"
             value={sellerMode}
             onChange={(v) => setSellerDemoMode(v as SellerDemoMode)}
@@ -128,7 +162,7 @@ export function DemoControls() {
           >
             <option value="">Choose action…</option>
             <option value="undo-purchases">Undo purchases (restore sold listings)</option>
-            <option value="reseed">Reseed listings + wallet</option>
+            <option value="reseed">Reseed listings + wallet (restores trade coupons)</option>
             <option value="factory-reset">Factory reset (FLOW-00 fresh)</option>
             <option value="open-marketplace">Go to Marketplace tab</option>
           </DemoSelect>

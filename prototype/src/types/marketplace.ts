@@ -50,6 +50,34 @@ export interface Transfer {
   status: TransferStatus
   createdAt: string
   completedAt?: string
+  /** FEAT-03: paired transfer on atomic trade swap */
+  linkedTransferId?: string
+  tradeProposalId?: string
+}
+
+export type TradeProposalStatus =
+  | 'pending_seller'
+  | 'pending_buyer'
+  | 'awaiting_confirm'
+  | 'completed'
+  | 'declined'
+  | 'expired'
+
+export interface TradeProposal {
+  id: string
+  listingId: string
+  buyerMemberId: string
+  sellerMemberId: string
+  /** Wallet offer IDs the buyer offers in exchange */
+  buyerWalletOfferIds: string[]
+  message?: string
+  status: TradeProposalStatus
+  sellerNote?: string
+  buyerConfirmedAt?: string
+  sellerConfirmedAt?: string
+  linkedTransferIds?: [string, string]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface WalletOffer extends Offer {

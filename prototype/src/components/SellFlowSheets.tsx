@@ -20,10 +20,12 @@ export function SellFlowSheets() {
   const band = walletOffer ? priceBand(walletOffer.savingsAmount) : null
   const [askingPrice, setAskingPrice] = useState('')
   const [priceError, setPriceError] = useState(false)
+  const [listingType, setListingType] = useState<'sale' | 'trade'>('sale')
 
   useEffect(() => {
     setAskingPrice('')
     setPriceError(false)
+    setListingType('sale')
   }, [selectedWalletOfferId])
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function SellFlowSheets() {
       return
     }
     const price = normalizePrice(parsed)
-    const result = publishWalletListing(selectedWalletOfferId, price)
+    const result = publishWalletListing(selectedWalletOfferId, price, listingType)
     if (result === 'price') {
       setPriceError(true)
       return
@@ -81,9 +83,21 @@ export function SellFlowSheets() {
         onClose={closeSheet}
         footer={
           <div className="space-y-3">
-            <PrimaryButton onClick={() => openSheet('sellListingForm')}>Sell on Marketplace</PrimaryButton>
-            <OutlineButton onClick={() => openSheet('feat03TradeStub')}>
-              Propose trade (coming soon)
+            <PrimaryButton
+              onClick={() => {
+                setListingType('sale')
+                openSheet('sellListingForm')
+              }}
+            >
+              Sell on Marketplace
+            </PrimaryButton>
+            <OutlineButton
+              onClick={() => {
+                setListingType('trade')
+                openSheet('sellListingForm')
+              }}
+            >
+              List for trade
             </OutlineButton>
           </div>
         }
@@ -119,6 +133,12 @@ export function SellFlowSheets() {
       >
         {walletOffer && band ? (
           <div className="space-y-4 text-sm">
+            {listingType === 'trade' ? (
+              <p className="rounded-lg bg-amber-50 p-3 text-amber-950">
+                Trade preferred: buyers can propose a swap. Cash buy stays available at your listed
+                price for fairness hints.
+              </p>
+            ) : null}
             {!state.sellerHasPublishedBefore ? (
               <p className="rounded-lg border border-cvs-blue/30 bg-blue-50 p-3 text-cvs-blue-dark">
                 <strong>First listing?</strong> Your offer is held in escrow on Marketplace—not on

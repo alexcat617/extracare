@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usePrototype } from '../context/PrototypeContext'
 import { BuyFlowSheets } from './BuyFlowSheets'
 import { SellFlowSheets } from './SellFlowSheets'
+import { TradeFlowSheets } from './TradeFlowSheets'
 import { BottomSheet, OutlineButton, PrimaryButton } from './BottomSheet'
 import { MobileCheckboxCard } from './MobileFormControls'
 
@@ -127,6 +128,7 @@ export function SheetHost() {
 
       <BuyFlowSheets />
       <SellFlowSheets />
+      <TradeFlowSheets />
     </>
   )
 }

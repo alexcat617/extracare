@@ -1,5 +1,5 @@
 import { MOCK_SELLER_ID } from '../data/seed'
-import type { Listing, WalletOffer } from '../types/marketplace'
+import type { Listing, ListingType, WalletOffer } from '../types/marketplace'
 import { hasActiveListingForEntitlement, type PrototypeState } from './prototypeStore'
 import { isPriceInBand, normalizePrice, sellerPayout } from '../lib/sellPricing'
 
@@ -45,6 +45,7 @@ export function publishListing(
   state: PrototypeState,
   walletOfferId: string,
   askingPrice: number,
+  listingType: ListingType = 'sale',
 ): { ok: true; listing: Listing } | { ok: false; reason: SellBlockReason } {
   const offer = state.walletOffers.find((w) => w.id === walletOfferId)
   if (!offer) return { ok: false, reason: 'not-transferable' }
@@ -68,12 +69,13 @@ export function publishListing(
     offerEntitlementId: offer.entitlementId,
     offerId: catalogOffer?.id ?? offer.id,
     sellerMemberId: MOCK_SELLER_ID,
-    type: 'sale',
+    type: listingType,
     price,
     status: 'active',
     createdAt: now,
     expiresAt: offer.expiry,
-    badge: 'From your wallet',
+    badge:
+      listingType === 'trade' ? 'Open to trades · From your wallet' : 'From your wallet',
   }
 
   return { ok: true, listing }
