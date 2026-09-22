@@ -1,505 +1,81 @@
-import { useState, type ReactNode } from 'react'
-
-import type { ConsentMode, SellerDemoMode } from '../context/PrototypeContext'
-
+import { useState } from 'react'
 import { usePrototype } from '../context/PrototypeContext'
-
-import type { DemoPreset } from '../lib/demoPresets'
-
-import type { DemoPurchaseOutcome } from '../store/prototypeStore'
-
-import { computeMarketplaceActivity } from '../lib/marketplaceActivity'
-
-import { pendingSellerProposals } from '../store/tradeActions'
-
 import { BottomSheet } from './BottomSheet'
 
-
-
-function consentModeFromState(
-
-  consent: boolean,
-
-  browseOnly: boolean,
-
-): ConsentMode {
-
-  if (consent) return 'given'
-
-  if (browseOnly) return 'browse-only'
-
-  return 'not-given'
-
-}
-
-
-
-const selectClass =
-
-  'w-full rounded-xl border border-cvs-gray-border bg-white px-3 py-3 text-base text-black'
-
-
-
-const presetButtonClass =
-
+const actionButtonClass =
   'w-full rounded-xl border-2 border-purple-700 bg-purple-50 px-4 py-3 text-left text-sm font-semibold text-purple-950 active:bg-purple-100'
 
-
-
-const PRESETS: { id: DemoPreset; label: string; hint: string }[] = [
-
-  { id: 'fresh-start', label: 'Fresh start', hint: 'FLOW-00 — consent not given' },
-
-  { id: 'sam-buy', label: 'Sam: Browse & buy', hint: 'Consent on · Marketplace browse' },
-
-  { id: 'sam-orders', label: 'Sam: Orders & escrow', hint: 'FEAT-05 · sample purchase on Orders tab' },
-
-  { id: 'jordan-listings', label: 'Jordan: Listings', hint: 'My listings + trade inbox' },
+const DEMO_ACTIONS: {
+  id: 'fresh-start' | 'reseed' | 'browse-marketplace'
+  label: string
+  hint: string
+}[] = [
+  {
+    id: 'fresh-start',
+    label: 'Fresh start',
+    hint: 'Back to Home. Marketplace rules reset like a first visit.',
+  },
+  {
+    id: 'reseed',
+    label: 'Reload coupons and listings',
+    hint: 'Restore sample deals. Keeps your current screen and settings.',
+  },
+  {
+    id: 'browse-marketplace',
+    label: 'Browse the marketplace',
+    hint: 'Sample listings ready—opens Savings → Marketplace.',
+  },
 ]
 
-
-
 export function DemoControls() {
-
   const [open, setOpen] = useState(false)
+  const { runDataAction, runDemoPreset } = usePrototype()
 
-  const {
-
-    state,
-
-    setConsentMode,
-
-    setExtraCareMode,
-
-    setOfflineMode,
-
-    setDemoNextPurchaseOutcome,
-
-    setDemoTrustScenario,
-
-    setSellerDemoMode,
-
-    runDataAction,
-
-    runDemoPreset,
-
-  } = usePrototype()
-
-
-
-  const sellerMode: SellerDemoMode = !state.demoPhoneVerified
-
-    ? 'no-phone'
-
-    : state.demoSellerListingCapReached
-
-      ? 'listing-cap'
-
-      : state.demoSellerAccountDays < 7
-
-        ? 'new-account'
-
-        : 'eligible'
-
-
-
-  const activeListings = state.listings.filter((l) => l.status === 'active')
-
-  const sellerTradeInbox = pendingSellerProposals(state).length
-
-  const activity = computeMarketplaceActivity(state)
-
-  const tradePending = state.tradeProposals.filter(
-
-    (p) => p.status === 'pending_seller',
-
-  ).length
-
-
-
-  const runPreset = (preset: DemoPreset) => {
-
-    runDemoPreset(preset)
-
+  const runAction = (id: (typeof DEMO_ACTIONS)[number]['id']) => {
+    if (id === 'fresh-start') runDemoPreset('fresh-start')
+    else if (id === 'reseed') runDataAction('reseed')
+    else runDemoPreset('sam-buy')
     setOpen(false)
-
   }
 
-
-
   return (
-
     <>
-
       <button
-
         type="button"
-
         onClick={() => setOpen(true)}
-
         className="fixed bottom-24 left-3 z-40 rounded-full border-2 border-dashed border-purple-600 bg-purple-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-purple-900 shadow-md"
-
-        aria-label="Open prototype controls"
-
+        aria-label="Open demo reset options"
       >
-
-        Prototype
-
+        Reset
       </button>
 
-
-
       <BottomSheet
-
-        title="Prototype controls"
-
+        title="Reset demo"
         open={open}
-
         onClose={() => setOpen(false)}
-
-        ariaLabel="Prototype demo controls — not shopper UI"
-
-        size="tall"
+        ariaLabel="Demo reset options — not shopper UI"
+        size="compact"
         dismissAnimation="always"
-
       >
-
-        <p className="mb-4 text-xs text-purple-800">
-
-          Demo presets reset state and jump to the right screen. Not shopper UI.
-
+        <p className="mb-4 text-sm text-purple-900">
+          If the walkthrough gets messy, use one of these. Not part of the real CVS app.
         </p>
 
-
-
-        <div className="space-y-4 text-sm">
-
-          <section>
-
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-purple-900">
-
-              Run a demo
-
-            </h3>
-
-            <ul className="space-y-2">
-
-              {PRESETS.map((p) => (
-
-                <li key={p.id}>
-
-                  <button
-
-                    type="button"
-
-                    className={presetButtonClass}
-
-                    onClick={() => runPreset(p.id)}
-
-                  >
-
-                    <span className="block">{p.label}</span>
-
-                    <span className="mt-0.5 block text-xs font-normal text-purple-800">
-
-                      {p.hint}
-
-                    </span>
-
-                  </button>
-
-                </li>
-
-              ))}
-
-            </ul>
-
-          </section>
-
-
-
-          <details className="rounded-xl border border-purple-200 bg-purple-50/50 p-3">
-
-            <summary className="cursor-pointer font-semibold text-purple-950">
-
-              Advanced
-
-            </summary>
-
-            <div className="mt-4 space-y-4">
-
-              <DemoSelect
-
-                label="Marketplace consent"
-
-                value={consentModeFromState(
-
-                  state.marketplaceConsent,
-
-                  state.marketplaceBrowseOnly,
-
-                )}
-
-                onChange={(v) => setConsentMode(v as ConsentMode)}
-
-              >
-
-                <option value="not-given">Not given (first visit)</option>
-
-                <option value="given">Given</option>
-
-                <option value="browse-only">Declined — browse only</option>
-
-              </DemoSelect>
-
-
-
-              <DemoSelect
-
-                label="ExtraCare"
-
-                value={state.extraCareLinked ? 'linked' : 'unlinked'}
-
-                onChange={(v) => setExtraCareMode(v === 'linked')}
-
-              >
-
-                <option value="linked">Linked</option>
-
-                <option value="unlinked">Not linked</option>
-
-              </DemoSelect>
-
-
-
-              <DemoSelect
-
-                label="Network"
-
-                value={state.offline ? 'offline' : 'online'}
-
-                onChange={(v) => setOfflineMode(v === 'offline')}
-
-              >
-
-                <option value="online">Online</option>
-
-                <option value="offline">Offline</option>
-
-              </DemoSelect>
-
-
-
-              <DemoSelect
-
-                label="Next Pay tap (one try)"
-
-                value={state.demoNextPurchaseOutcome}
-
-                onChange={(v) => setDemoNextPurchaseOutcome(v as DemoPurchaseOutcome)}
-
-              >
-
-                <option value="none">Normal — success</option>
-
-                <option value="payment-fail">Payment fails</option>
-
-                <option value="sold-out">Sold out</option>
-
-                <option value="wallet-timeout">Wallet timeout → refund</option>
-
-              </DemoSelect>
-
-
-
-              <DemoSelect
-
-                label="Next buy — trust scenario (one try)"
-
-                value={
-                  state.demoNextPurchaseMissingWallet
-                    ? 'missing-wallet'
-                    : state.demoNextPurchaseTermsMismatch
-                      ? 'terms-mismatch'
-                      : 'none'
-                }
-
-                onChange={(v) =>
-                  setDemoTrustScenario(
-                    v as 'none' | 'missing-wallet' | 'terms-mismatch',
-                  )
-                }
-
-              >
-
-                <option value="none">Normal delivery</option>
-
-                <option value="missing-wallet">Offer missing from wallet</option>
-
-                <option value="terms-mismatch">Wallet terms ≠ listing</option>
-
-              </DemoSelect>
-
-
-
-              {state.lastPurchaseTransferId ? (
-
-                <button
-
-                  type="button"
-
-                  className="w-full rounded-xl border border-cvs-gray-border bg-white px-4 py-3 text-left text-sm font-medium text-black active:bg-cvs-gray-bg"
-
-                  onClick={() =>
-                    setDemoTrustScenario('redeemed', state.lastPurchaseTransferId!)
-                  }
-
-                >
-
-                  Mark last purchase redeemed (blocks refund)
-
-                </button>
-
-              ) : null}
-
-
-
-              <DemoSelect
-
-                label="Seller eligibility (Jordan)"
-
-                value={sellerMode}
-
-                onChange={(v) => setSellerDemoMode(v as SellerDemoMode)}
-
-              >
-
-                <option value="eligible">Eligible (14-day account)</option>
-
-                <option value="new-account">New account (3 days)</option>
-
-                <option value="listing-cap">Listing cap reached</option>
-
-                <option value="no-phone">Phone not verified</option>
-
-              </DemoSelect>
-
-
-
+        <ul className="space-y-2">
+          {DEMO_ACTIONS.map((action) => (
+            <li key={action.id}>
               <button
-
                 type="button"
-
-                className={presetButtonClass}
-
-                onClick={() => runDataAction('undo-purchases')}
-
+                className={actionButtonClass}
+                onClick={() => runAction(action.id)}
               >
-
-                Undo purchases (restore sold listings)
-
+                <span className="block">{action.label}</span>
+                <span className="mt-0.5 block text-xs font-normal text-purple-800">{action.hint}</span>
               </button>
-
-
-
-              <button
-
-                type="button"
-
-                className={presetButtonClass}
-
-                onClick={() => runDataAction('reseed')}
-
-              >
-
-                Reseed listings + wallet
-
-              </button>
-
-            </div>
-
-          </details>
-
-
-
-          <p className="text-xs text-cvs-gray-muted">
-
-            {activeListings.length} marketplace listings · {activity.activeListings} yours active ·{' '}
-
-            {sellerTradeInbox} seller inbox · {tradePending} trade pending ·{' '}
-
-            {state.walletOffers.length} on wallet · Next buy:{' '}
-
-            <strong className="text-black">
-
-              {state.demoNextPurchaseOutcome === 'none'
-
-                ? 'success'
-
-                : state.demoNextPurchaseOutcome}
-
-            </strong>
-
-          </p>
-
-        </div>
-
+            </li>
+          ))}
+        </ul>
       </BottomSheet>
-
     </>
-
   )
-
 }
-
-
-
-function DemoSelect({
-
-  label,
-
-  value,
-
-  onChange,
-
-  children,
-
-}: {
-
-  label: string
-
-  value: string
-
-  onChange: (value: string) => void
-
-  children: ReactNode
-
-}) {
-
-  return (
-
-    <label className="block">
-
-      <span className="mb-1.5 block font-semibold text-black">{label}</span>
-
-      <select
-
-        className={selectClass}
-
-        value={value}
-
-        onChange={(e) => onChange(e.target.value)}
-
-      >
-
-        {children}
-
-      </select>
-
-    </label>
-
-  )
-
-}
-
-

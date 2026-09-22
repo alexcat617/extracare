@@ -1,16 +1,11 @@
-import { PrimaryButton } from '../components/BottomSheet'
-import { markWelcomeSeen } from '../lib/welcomeGate'
+import { OutlineButton, PrimaryButton } from '../components/BottomSheet'
 
 interface HomeWelcomeScreenProps {
   onStart: () => void
+  onOpenCaseStudy: () => void
 }
 
-export function HomeWelcomeScreen({ onStart }: HomeWelcomeScreenProps) {
-  const handleStart = () => {
-    markWelcomeSeen()
-    onStart()
-  }
-
+export function HomeWelcomeScreen({ onStart, onOpenCaseStudy }: HomeWelcomeScreenProps) {
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col items-center justify-center bg-white px-6 pb-28">
       <div
@@ -23,8 +18,9 @@ export function HomeWelcomeScreen({ onStart }: HomeWelcomeScreenProps) {
           Case-study prototype — coupons, Marketplace, and protected buys.
         </p>
       </div>
-      <div className="mt-10 w-full max-w-sm px-2">
-        <PrimaryButton onClick={handleStart}>Start</PrimaryButton>
+      <div className="mt-10 w-full max-w-sm space-y-3 px-2">
+        <PrimaryButton onClick={onStart}>Start</PrimaryButton>
+        <OutlineButton onClick={onOpenCaseStudy}>See process</OutlineButton>
       </div>
     </div>
   )

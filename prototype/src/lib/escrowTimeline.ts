@@ -47,6 +47,29 @@ export function isPurchasedWalletOffer(
   return Boolean(transfer && !transfer.tradeProposalId)
 }
 
+/** Sort key for On card: marketplace-received offers by transfer time; clipped offers sort below. */
+export function walletOfferActivitySortKey(
+  transfers: Transfer[],
+  offer: WalletOffer,
+): number {
+  if (!offer.transferId) return 0
+  const transfer = transfers.find((t) => t.id === offer.transferId)
+  if (!transfer) return 0
+  const t = Date.parse(transfer.completedAt ?? transfer.createdAt)
+  return Number.isNaN(t) ? 0 : t
+}
+
+export function compareWalletOffersForOnCard(
+  transfers: Transfer[],
+  a: WalletOffer,
+  b: WalletOffer,
+): number {
+  const keyA = walletOfferActivitySortKey(transfers, a)
+  const keyB = walletOfferActivitySortKey(transfers, b)
+  if (keyA !== keyB) return keyB - keyA
+  return a.title.localeCompare(b.title)
+}
+
 export function buildEscrowTimeline(
   transfer: Transfer,
   walletOffers: WalletOffer[],
