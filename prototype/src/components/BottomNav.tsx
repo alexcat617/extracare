@@ -1,11 +1,14 @@
 import type { MainTab } from '../context/PrototypeContext'
+import { NavIconHome, NavIconOrders, NavIconSavings } from './BottomNavIcons'
 
-const TABS: { id: MainTab; label: string; icon: string }[] = [
-  { id: 'home', label: 'Home', icon: '🏠' },
-  { id: 'savings', label: 'Savings', icon: '💰' },
-  { id: 'shop', label: 'Shop', icon: '🛒' },
-  { id: 'photo', label: 'Photo', icon: '📷' },
-  { id: 'orders', label: 'Orders', icon: '📦' },
+const TABS: {
+  id: MainTab
+  label: string
+  Icon: () => JSX.Element
+}[] = [
+  { id: 'home', label: 'Home', Icon: NavIconHome },
+  { id: 'savings', label: 'Savings', Icon: NavIconSavings },
+  { id: 'orders', label: 'Orders', Icon: NavIconOrders },
 ]
 
 interface BottomNavProps {
@@ -23,20 +26,21 @@ export function BottomNav({ active, onChange }: BottomNavProps) {
         {TABS.map((tab) => {
           const isSavings = tab.id === 'savings'
           const selected = active === tab.id
+          const { Icon } = tab
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => onChange(tab.id)}
-              className={`flex min-w-[56px] flex-col items-center gap-0.5 px-1 py-1 text-[10px] font-medium ${
+              className={`relative flex min-w-[56px] flex-col items-center gap-0.5 px-1 py-1 text-[10px] font-medium ${
                 selected && isSavings ? 'text-cvs-red' : selected ? 'text-cvs-blue' : 'text-cvs-gray-muted'
               }`}
               aria-current={selected ? 'page' : undefined}
             >
-              <span className="text-xl" aria-hidden>{tab.icon}</span>
+              <Icon />
               {tab.label}
               {tab.id === 'orders' ? (
-                <span className="absolute top-1 text-[8px] font-bold text-cvs-red">New</span>
+                <span className="absolute right-1 top-0 text-[8px] font-bold text-cvs-red">New</span>
               ) : null}
             </button>
           )

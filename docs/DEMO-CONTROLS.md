@@ -1,6 +1,6 @@
 # Prototype demo controls
 
-**Not shopper UI.** A separate **Prototype controls** surface so you can demo flows and reset state without a persona header toggle.
+**Not shopper UI.** A **Reset** pill (bottom-left) opens three plain-language actions so reviewers can recover the demo without a persona toggle in the app chrome.
 
 **Guardrails:** [DESIGN-GUARDRAILS.md](./DESIGN-GUARDRAILS.md) · **Build prompts:** [BUILD-PROMPTS.md](./BUILD-PROMPTS.md)
 
@@ -8,53 +8,30 @@
 
 ## Principles
 
-- **No** “View as Jordan / Sam” in the app header or main nav.
-- Personas stay in **docs** (PERSONAS, FEAT lens); you demo paths with **presets** and taps, not by switching identity in chrome.
-- Controls must look **clearly non-production** (fixed **Prototype** pill → bottom sheet)—never mixed with ExtraCare or Savings chrome.
+- **No** “View as Jordan / Sam” in the header or main nav.
+- Personas stay in **docs**; reviewers use **Reset** and normal taps in the app.
+- Controls look **clearly non-production** (purple dashed **Reset** pill → bottom sheet).
 
 ---
 
 ## Where it lives
 
-- **Entry:** Fixed **Prototype** pill (bottom-left) → **bottom sheet**.
-- **Persistence:** Same store as app (`localStorage`); presets and Advanced actions write through that store.
+- **Entry:** Fixed **Reset** pill (bottom-left) → **Reset demo** sheet (`size="compact"`).
+- **Persistence:** Same store as the app (`localStorage`).
 
 ---
 
-## Run a demo (primary)
+## Actions (three buttons)
 
-One tap each: resets the right mock state and navigates. Presets do **not** auto-open flow sheets—walk trade/buy/sell in the app.
+| Button | Effect |
+|--------|--------|
+| **Fresh start** | Full factory reset; **Home** welcome; marketplace rules not accepted yet. Use **Start** or **See process** on Home. |
+| **Reload coupons and listings** | Reseed marketplace listings and wallet sample data; keeps current tab and most settings. |
+| **Browse the marketplace** | Consent on, sample listings loaded; navigates to Savings → Marketplace **Browse**. |
 
-| Preset | State | Navigation |
-|--------|--------|------------|
-| **Fresh start** | Factory reset (consent off, seed data) | **Home** splash → tap **Start** for Savings, or **See process** for the portfolio case-study story |
-| **Sam: Browse & buy** | Consent given, reseed marketplace + wallet | Savings → Marketplace **Browse** |
-| **Sam: Orders & escrow** | Consent given + sample completed purchase | **Orders** tab (FEAT-05) |
-| **Jordan: Listings** | Consent given, Jordan seller pack (listings + pending trade inbox) | Marketplace → **Listings** |
+Presets do **not** auto-open buy/sell sheets—tap through flows in the app.
 
-**Trade demo:** **Jordan: Listings** → **Review trade offer** → **Accept trade** → success sheet. Sam = buyer (`MOCK_MEMBER_ID`); Jordan = seller (`MOCK_SELLER_ID`).
-
-**Home tab:** After Fresh start (or first visit), **Start** opens Savings. **See process** opens a full-screen portfolio story (problem, maps, Azure-shaped FEATs, git, Cursor). Close returns to Home; the last chapter can **Start prototype**.
-
----
-
-## Advanced (collapsed)
-
-Edge cases and maintenance—not needed for a clean case-study walkthrough.
-
-| Control | Effect |
-|---------|--------|
-| **Marketplace consent** | Not given / Given / Browse only |
-| **ExtraCare linked** | On/off — link gate when off |
-| **Network** | Online / Offline |
-| **Next Pay tap** | One-shot: payment fail, sold out, wallet timeout |
-| **Next buy — trust scenario** | One-shot: offer missing from wallet, or wallet terms ≠ listing snapshot |
-| **Mark last purchase redeemed** | Blocks in-app refund (FLOW-06 abuse path) |
-| **Seller eligibility** | Jordan blocked scenarios (new account, cap, no phone) |
-| **Undo purchases** | Restore sold listings from wallet demos |
-| **Reseed listings + wallet** | Reload seed without full factory reset |
-
-Removed from the main panel (use presets instead): trade action dropdown, escrow lock dropdown, data-action dropdown, separate “seed my listings” action (included in Jordan presets).
+**Home tab:** **See process** opens the portfolio case-study story (for hiring managers).
 
 ---
 
@@ -62,8 +39,14 @@ Removed from the main panel (use presets instead): trade action dropdown, escrow
 
 - Signed in (mock)
 - **ExtraCare linked:** `true`
-- **Marketplace consent:** `false` (FLOW-00 on next Marketplace visit)
+- **Marketplace consent:** `false` (rules sheet on next Marketplace visit)
 - Seed data loaded
+
+---
+
+## Maintainer note
+
+Edge-case toggles (consent modes, offline, trust scenarios, seller blocks) remain available via `PrototypeContext` APIs but are **not** exposed in the shared UI. Use dev tools or re-add a hidden panel locally if needed.
 
 ---
 
@@ -72,4 +55,5 @@ Removed from the main panel (use presets instead): trade action dropdown, escrow
 | Date | Change |
 |------|--------|
 | 2026-03-15 | Initial spec; no persona toggle |
-| 2026-09-18 | Demo presets + Advanced section; trade dual-confirm presenter shortcuts |
+| 2026-09-18 | Demo presets + Advanced section |
+| 2026-09-22 | Simplified to Reset pill + three actions; Advanced removed from UI |

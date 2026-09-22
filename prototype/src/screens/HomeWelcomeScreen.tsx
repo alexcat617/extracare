@@ -1,20 +1,11 @@
-import { useState } from 'react'
 import { OutlineButton, PrimaryButton } from '../components/BottomSheet'
-import { markWelcomeSeen } from '../lib/welcomeGate'
-import { CaseStudyScreen } from './CaseStudyScreen'
 
 interface HomeWelcomeScreenProps {
   onStart: () => void
+  onOpenCaseStudy: () => void
 }
 
-export function HomeWelcomeScreen({ onStart }: HomeWelcomeScreenProps) {
-  const [caseStudyOpen, setCaseStudyOpen] = useState(false)
-
-  const handleStart = () => {
-    markWelcomeSeen()
-    onStart()
-  }
-
+export function HomeWelcomeScreen({ onStart, onOpenCaseStudy }: HomeWelcomeScreenProps) {
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col items-center justify-center bg-white px-6 pb-28">
       <div
@@ -28,12 +19,9 @@ export function HomeWelcomeScreen({ onStart }: HomeWelcomeScreenProps) {
         </p>
       </div>
       <div className="mt-10 w-full max-w-sm space-y-3 px-2">
-        <PrimaryButton onClick={handleStart}>Start</PrimaryButton>
-        <OutlineButton onClick={() => setCaseStudyOpen(true)}>See process</OutlineButton>
+        <PrimaryButton onClick={onStart}>Start</PrimaryButton>
+        <OutlineButton onClick={onOpenCaseStudy}>See process</OutlineButton>
       </div>
-      {caseStudyOpen ? (
-        <CaseStudyScreen onClose={() => setCaseStudyOpen(false)} onStart={handleStart} />
-      ) : null}
     </div>
   )
 }

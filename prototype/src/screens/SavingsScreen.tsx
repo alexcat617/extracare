@@ -12,7 +12,11 @@ import {
   type MarketplaceFilters,
 } from '../lib/marketplaceFilters'
 import type { Listing, Offer } from '../types/marketplace'
-import { isPurchasedWalletOffer, isTradedWalletOffer } from '../lib/escrowTimeline'
+import {
+  compareWalletOffersForOnCard,
+  isPurchasedWalletOffer,
+  isTradedWalletOffer,
+} from '../lib/escrowTimeline'
 import { isOfferOnCard } from '../store/clipActions'
 import { getOfferForListing } from '../store/prototypeStore'
 import { MarketplaceActivityPanel } from './MarketplaceActivityPanel'
@@ -98,7 +102,15 @@ export function SavingsScreen() {
     [visibleCatalogOffers, savingsSegment],
   )
 
-  const activeWalletCount = state.walletOffers.filter((o) => o.status === 'active').length
+  const activeWalletOffers = useMemo(
+    () =>
+      state.walletOffers
+        .filter((o) => o.status === 'active')
+        .sort((a, b) => compareWalletOffersForOnCard(state.transfers, a, b)),
+    [state.walletOffers, state.transfers],
+  )
+
+  const activeWalletCount = activeWalletOffers.length
 
   const filtersActive =
     marketplaceFilters.category !== 'all' ||
@@ -125,22 +137,11 @@ export function SavingsScreen() {
   return (
     <div className="pb-28">
       <header className="sticky top-0 z-20 border-b border-cvs-gray-border bg-cvs-gray-bg px-4 pb-3 pt-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-black">Savings</h1>
-          <div className="flex gap-3">
-            <button type="button" className="text-xl" aria-label="Chat with CVS">💬</button>
-            <button type="button" className="text-xl" aria-label="Cart">🛒</button>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold text-black">Savings</h1>
       </header>
 
       <div className="px-4 pt-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Coupons</h2>
-          <button type="button" className="text-sm font-semibold text-cvs-blue">
-            Weekly Ad
-          </button>
-        </div>
+        <h2 className="mb-3 text-lg font-bold">Coupons</h2>
 
         <SegmentBar
           value={savingsSegment}
@@ -261,9 +262,7 @@ export function SavingsScreen() {
               </EmptyStateLink>
             </EmptyStateCard>
           ) : (
-            state.walletOffers
-              .filter((o) => o.status === 'active')
-              .map((offer) => (
+            activeWalletOffers.map((offer) => (
               <CouponCard
                 key={offer.id}
                 offer={offer}
