@@ -198,7 +198,12 @@ export function createSeedListings(offers: Offer[]): Listing[] {
     status: 'active' as const,
     createdAt: now,
     expiresAt: o.expiry,
-    badge: i % 3 === 0 ? 'Expires soon' : undefined,
+    badge:
+      i % 4 === 0
+        ? 'Expires soon'
+        : i % 4 === 1
+          ? 'Price drop'
+          : undefined,
   }))
 }
 

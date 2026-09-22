@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { hasSeenWelcome } from '../lib/welcomeGate'
 import {
   clearConsent,
   loadState,
@@ -51,6 +52,7 @@ import {
   type NotInWalletDisputeOutcome,
   type TermsDisputeOutcome,
 } from '../store/trustActions'
+import { clipCatalogOfferToWallet } from '../store/clipActions'
 
 export type SheetId =
   | 'consent'
@@ -145,6 +147,7 @@ interface PrototypeContextValue {
   ) => 'success' | 'price' | 'blocked' | 'error'
   cancelMyListing: (listingId: string) => 'success' | 'blocked' | 'error'
   hideMarketplaceListing: (listingId: string) => void
+  clipOfferToCard: (catalogOfferId: string) => void
   openPurchaseStatus: (transferId: string) => void
   runDisputeWalletCheck: (transferId: string) => NotInWalletDisputeOutcome
   runDisputeTermsResolution: (transferId: string) => TermsDisputeOutcome
@@ -176,7 +179,9 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
   const [selectedWalletOfferId, setSelectedWalletOfferId] = useState<string | null>(null)
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null)
-  const [mainTab, setMainTab] = useState<MainTab>('savings')
+  const [mainTab, setMainTab] = useState<MainTab>(() =>
+    hasSeenWelcome() ? 'savings' : 'home',
+  )
   const [savingsSegment, setSavingsSegment] = useState<SavingsSegment>('all')
   const [marketplaceView, setMarketplaceView] = useState<MarketplaceView>('browse')
 
@@ -341,6 +346,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
         setState(fresh)
         setActiveSheet(null)
         setSavingsSegment('all')
+        setMainTab('home')
         return
       }
       if (action === 'open-marketplace') {
@@ -537,6 +543,13 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     [patchState],
   )
 
+  const clipOfferToCard = useCallback(
+    (catalogOfferId: string) => {
+      patchState((prev) => clipCatalogOfferToWallet(prev, catalogOfferId))
+    },
+    [patchState],
+  )
+
   const beginSellFromWallet = useCallback(
     (walletOfferId: string) => {
       setSelectedWalletOfferId(walletOfferId)
@@ -685,6 +698,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       updateMyListingPrice,
       cancelMyListing,
       hideMarketplaceListing,
+      clipOfferToCard,
       openPurchaseStatus,
       runDisputeWalletCheck,
       runDisputeTermsResolution,
@@ -730,6 +744,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       updateMyListingPrice,
       cancelMyListing,
       hideMarketplaceListing,
+      clipOfferToCard,
       openPurchaseStatus,
       runDisputeWalletCheck,
       runDisputeTermsResolution,

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Offer } from '../types/marketplace'
 
 function formatExpiry(iso: string): string {
@@ -17,9 +18,16 @@ interface CouponCardProps {
   badge?: string
   primaryAction?: { label: string; onClick: () => void; disabled?: boolean }
   secondaryAction?: { label: string; onClick: () => void }
+  secondarySlot?: ReactNode
   marketplace?: boolean
+  /** Marketplace browse feed — subtle commerce accent */
+  marketplaceBrowse?: boolean
   price?: number
   transferId?: string
+  /** Received via marketplace trade swap */
+  traded?: boolean
+  /** Received via protected marketplace purchase */
+  bought?: boolean
   /** Product / brand line above headline (e.g. trade context) */
   productTitle?: string
 }
@@ -29,29 +37,53 @@ export function CouponCard({
   badge,
   primaryAction,
   secondaryAction,
+  secondarySlot,
   marketplace,
+  marketplaceBrowse,
   price,
   transferId,
+  traded,
+  bought,
   productTitle,
 }: CouponCardProps) {
-  const isLastDay = badge === 'Expires soon' || badge === 'Last day'
+  const isExpiryBadge = badge === 'Expires soon' || badge === 'Last day'
+  const isPriceDrop = badge === 'Price drop'
 
   return (
     <article
-      className="rounded-[var(--radius-card)] border border-cvs-gray-border bg-white p-4"
+      className={`rounded-[var(--radius-card)] border bg-white p-4 ${
+        marketplaceBrowse
+          ? 'border-cvs-blue/35 shadow-[0_1px_0_0_rgba(0,76,151,0.06)]'
+          : 'border-cvs-gray-border'
+      }`}
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        {isLastDay ? (
+        {isExpiryBadge ? (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
             {badge ?? 'Last day'}
+          </span>
+        ) : null}
+        {isPriceDrop ? (
+          <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-900">
+            Price drop
           </span>
         ) : null}
         <span className="rounded-full border border-cvs-gray-border px-2 py-0.5 text-xs text-cvs-gray-muted">
           {channelLabel(offer.channel)}
         </span>
-        {marketplace ? (
+        {marketplace && !marketplaceBrowse ? (
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-cvs-blue">
             Marketplace
+          </span>
+        ) : null}
+        {traded ? (
+          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-900">
+            Traded
+          </span>
+        ) : null}
+        {bought ? (
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-cvs-blue-dark">
+            Bought
           </span>
         ) : null}
       </div>
@@ -86,19 +118,23 @@ export function CouponCard({
               Transfer ID: <span className="font-mono">{transferId}</span>
             </p>
           ) : null}
-          {marketplace && price != null ? (
-            <p className="mt-1 text-sm font-semibold text-black">Buy for ${price.toFixed(2)}</p>
+          {marketplace && price != null && !primaryAction ? (
+            <p className="mt-1 text-sm font-semibold text-black">
+              Listing price ${price.toFixed(2)}
+            </p>
           ) : null}
         </div>
       </div>
       <div
         className={
-          primaryAction || secondaryAction
+          primaryAction || secondaryAction || secondarySlot
             ? 'mt-4 flex flex-wrap items-center gap-3'
             : 'hidden'
         }
       >
-        {secondaryAction ? (
+        {secondarySlot ? (
+          secondarySlot
+        ) : secondaryAction ? (
           <button
             type="button"
             onClick={secondaryAction.onClick}

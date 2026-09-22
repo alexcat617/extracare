@@ -4,6 +4,9 @@ import { usePrototype } from '../context/PrototypeContext'
 import { checkSellEligibility, formatPayoutPreview } from '../store/sellActions'
 import type { PrototypeState } from '../store/prototypeStore'
 import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
+import { LoadingSpinner } from './LoadingSpinner'
+
+const PUBLISH_LOADING_MS = 1000
 
 export function SellFlowSheets() {
   const {
@@ -21,12 +24,18 @@ export function SellFlowSheets() {
   const [askingPrice, setAskingPrice] = useState('')
   const [priceError, setPriceError] = useState(false)
   const [listingType, setListingType] = useState<'sale' | 'trade'>('sale')
+  const [publishing, setPublishing] = useState(false)
 
   useEffect(() => {
     setAskingPrice('')
     setPriceError(false)
     setListingType('sale')
+    setPublishing(false)
   }, [selectedWalletOfferId])
+
+  useEffect(() => {
+    if (activeSheet !== 'sellListingForm') setPublishing(false)
+  }, [activeSheet])
 
   useEffect(() => {
     if (activeSheet === 'sellListingForm' && band && askingPrice === '') {
@@ -40,15 +49,18 @@ export function SellFlowSheets() {
     setPriceError(false)
   }
 
-  const handlePublish = () => {
-    if (!selectedWalletOfferId) return
+  const handlePublish = async () => {
+    if (!selectedWalletOfferId || publishing) return
     const parsed = parseFloat(askingPrice)
     if (Number.isNaN(parsed)) {
       setPriceError(true)
       return
     }
     const price = normalizePrice(parsed)
+    setPublishing(true)
+    await new Promise((resolve) => window.setTimeout(resolve, PUBLISH_LOADING_MS))
     const result = publishWalletListing(selectedWalletOfferId, price, listingType)
+    setPublishing(false)
     if (result === 'price') {
       setPriceError(true)
       return
@@ -106,17 +118,39 @@ export function SellFlowSheets() {
         title="List on Marketplace"
         size="flow"
         open={activeSheet === 'sellListingForm'}
-        onClose={closeSheet}
+        onClose={() => {
+          if (publishing) return
+          closeSheet()
+        }}
         footer={
           walletOffer && band ? (
             <div className="space-y-3">
-              <PrimaryButton onClick={handlePublish}>Publish listing</PrimaryButton>
-              <OutlineButton onClick={closeSheet}>Cancel</OutlineButton>
+              <PrimaryButton onClick={handlePublish} disabled={publishing}>
+                {publishing ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <LoadingSpinner className="h-5 w-5 border-2" />
+                    Publishing…
+                  </span>
+                ) : (
+                  'Publish listing'
+                )}
+              </PrimaryButton>
+              {publishing ? null : (
+                <OutlineButton onClick={closeSheet}>Cancel</OutlineButton>
+              )}
+              {publishing ? (
+                <p className="text-center text-xs text-cvs-gray-muted">
+                  Keep this screen open while we reserve your offer and post your listing.
+                </p>
+              ) : null}
             </div>
           ) : undefined
         }
       >
         {walletOffer && band ? (
+          publishing ? (
+            <SellPublishProcessing listingType={listingType} />
+          ) : (
           <div className="space-y-3 text-sm">
             <p className="font-semibold text-black">{walletOffer.headline}</p>
             <div>
@@ -205,6 +239,7 @@ export function SellFlowSheets() {
               {formatPayoutPreview(parseFloat(askingPrice) || band.suggested)}
             </p>
           </div>
+          )
         ) : null}
       </BottomSheet>
 
@@ -247,6 +282,28 @@ export function SellFlowSheets() {
       </BottomSheet>
 
     </>
+  )
+}
+
+function SellPublishProcessing({ listingType }: { listingType: 'sale' | 'trade' }) {
+  const tradeOpen = listingType === 'trade'
+  return (
+    <div
+      className="flex min-h-[40vh] flex-col items-center justify-center px-4 text-center"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <LoadingSpinner />
+      <p className="mt-6 text-lg font-semibold text-black">Publishing listing</p>
+      <p className="mt-2 text-sm text-cvs-gray-muted">
+        Reserving your offer and adding it to Marketplace
+        {tradeOpen ? ' (open to trades)' : ''}.
+      </p>
+      <p className="mt-6 max-w-[280px] text-xs text-cvs-gray-muted">
+        Your coupon stays off your card while listed. This usually takes a few seconds.
+      </p>
+    </div>
   )
 }
 

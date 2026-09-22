@@ -140,8 +140,15 @@ export function BuyFlowSheets() {
               </p>
             )}
             {listing.badge ? (
-              <p className="text-xs text-amber-800" role="status">
-                {listing.badge} — popular listings may sell quickly.
+              <p
+                className={`text-xs ${
+                  listing.badge === 'Price drop' ? 'text-green-900' : 'text-amber-800'
+                }`}
+                role="status"
+              >
+                {listing.badge === 'Price drop'
+                  ? 'Price drop — the seller lowered the asking price recently.'
+                  : `${listing.badge} — popular listings may sell quickly.`}
               </p>
             ) : null}
           </div>

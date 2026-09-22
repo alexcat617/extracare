@@ -6,6 +6,7 @@ import {
   listingHasEscrowLock,
   listingHasTradeLock,
 } from '../store/listingManageActions'
+import { EmptyStateCard } from '../components/EmptyStateCard'
 import { ListingExpiryIndicator } from '../components/ListingExpiryIndicator'
 import type { Listing, TradeProposal } from '../types/marketplace'
 
@@ -54,10 +55,11 @@ export function MyListingsPanel() {
       <section aria-labelledby="listings-active-heading">
         <SectionHeader id="listings-active-heading" title="Active listings" count={active.length} />
         {active.length === 0 ? (
-          <EmptyCopy
+          <EmptyStateCard
             className="mt-3"
             title="No active listings"
-            body="List from Savings → On card → Not for me when you’re ready to sell or trade."
+            description="List from Savings → On card → Not for me when you’re ready to sell or trade."
+            icon="📋"
           />
         ) : (
           <ul className="mt-3 space-y-2">
@@ -184,21 +186,3 @@ function TradeRow({
   )
 }
 
-function EmptyCopy({
-  title,
-  body,
-  className = '',
-}: {
-  title: string
-  body: string
-  className?: string
-}) {
-  return (
-    <div
-      className={`rounded-[var(--radius-card)] border border-cvs-gray-border bg-white p-6 text-center shadow-sm ${className}`}
-    >
-      <p className="font-semibold text-black">{title}</p>
-      <p className="mt-2 text-sm text-cvs-gray-muted">{body}</p>
-    </div>
-  )
-}

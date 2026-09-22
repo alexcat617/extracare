@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ADD_TO_CARD_SUCCESS_MS, AddToCardButton } from '../components/AddToCardButton'
 import { CouponCard } from '../components/CouponCard'
+import { EmptyStateCard, EmptyStateLink } from '../components/EmptyStateCard'
+import { MarketplaceFilterSheet } from '../components/MarketplaceFilterSheet'
 import { MarketplaceTabBar } from '../components/MarketplaceTabBar'
 import { SegmentBar } from '../components/SegmentBar'
 import { usePrototype } from '../context/PrototypeContext'
@@ -9,11 +12,14 @@ import {
   type MarketplaceFilters,
 } from '../lib/marketplaceFilters'
 import type { Listing, Offer } from '../types/marketplace'
+import { isPurchasedWalletOffer, isTradedWalletOffer } from '../lib/escrowTimeline'
+import { isOfferOnCard } from '../store/clipActions'
 import { getOfferForListing } from '../store/prototypeStore'
 import { MarketplaceActivityPanel } from './MarketplaceActivityPanel'
 import { MyListingsPanel } from './MyListingsPanel'
 
 const HIDE_LISTING_ANIMATION_MS = 720
+const CLIP_DISMISS_MS = 720
 
 export function SavingsScreen() {
   const {
@@ -25,12 +31,16 @@ export function SavingsScreen() {
     openSheet,
     beginSellFromWallet,
     hideMarketplaceListing,
-    runDataAction,
+    clipOfferToCard,
   } = usePrototype()
   const [loading, setLoading] = useState(false)
+  const [dismissingClipOfferIds, setDismissingClipOfferIds] = useState<Set<string>>(
+    () => new Set(),
+  )
   const [marketplaceFilters, setMarketplaceFilters] = useState<MarketplaceFilters>(
     DEFAULT_MARKETPLACE_FILTERS,
   )
+  const [marketplaceFiltersOpen, setMarketplaceFiltersOpen] = useState(false)
 
   useEffect(() => {
     if (savingsSegment !== 'marketplace') return
@@ -69,10 +79,32 @@ export function SavingsScreen() {
     return activeListings.filter((l) => !hidden.has(l.id))
   }, [activeListings, state.hiddenMarketplaceListingIds])
 
+  const visibleCatalogOffers = useMemo(
+    () =>
+      state.offers
+        .filter((o) => o.transferable)
+        .filter(
+          (o) =>
+            !isOfferOnCard(state, o.entitlementId) || dismissingClipOfferIds.has(o.id),
+        ),
+    [state.offers, state.walletOffers, dismissingClipOfferIds],
+  )
+
+  const catalogSlice = useMemo(
+    () =>
+      savingsSegment === 'for-you'
+        ? visibleCatalogOffers.slice(0, 6)
+        : visibleCatalogOffers.slice(0, 12),
+    [visibleCatalogOffers, savingsSegment],
+  )
+
+  const activeWalletCount = state.walletOffers.filter((o) => o.status === 'active').length
+
   const filtersActive =
     marketplaceFilters.category !== 'all' ||
     marketplaceFilters.expiresSoon ||
-    marketplaceFilters.discountType !== 'all'
+    marketplaceFilters.discountType !== 'all' ||
+    marketplaceFilters.sort !== 'recommended'
 
   const browseReadOnly = !state.marketplaceConsent
 
@@ -121,6 +153,27 @@ export function SavingsScreen() {
         {savingsSegment === 'marketplace' ? (
           <>
             <MarketplaceTabBar />
+            {marketplaceView === 'browse' ? (
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMarketplaceFiltersOpen(true)}
+                  className="rounded-full border-2 border-cvs-blue px-4 py-1.5 text-sm font-semibold text-cvs-blue"
+                  aria-expanded={marketplaceFiltersOpen}
+                >
+                  Sort &amp; refine
+                  {filtersActive ? (
+                    <span className="sr-only"> (filters applied)</span>
+                  ) : null}
+                  {filtersActive ? (
+                    <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-cvs-blue align-middle" aria-hidden />
+                  ) : null}
+                </button>
+                <span className="text-sm text-cvs-gray-muted">
+                  {browseListings.length} listing{browseListings.length === 1 ? '' : 's'}
+                </span>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="mt-3 flex items-center justify-between gap-2">
@@ -170,7 +223,6 @@ export function SavingsScreen() {
         {!loading && marketplaceBrowse ? (
           browseListings.length === 0 ? (
             <EmptyMarketplace
-              onReseed={() => runDataAction('reseed')}
               filtered={
                 filtersActive ||
                 (activeListings.length > 0 && browseListings.length === 0)
@@ -196,8 +248,18 @@ export function SavingsScreen() {
         ) : null}
 
         {!loading && savingsSegment === 'on-card' ? (
-          state.walletOffers.filter((o) => o.status === 'active').length === 0 ? (
-            <p className="text-center text-sm text-cvs-gray-muted py-8">No offers on your card.</p>
+          activeWalletCount === 0 ? (
+            <EmptyStateCard
+              title="No deals on your card"
+              description="Clip offers from For you or All, or buy a coupon on Marketplace."
+            >
+              <EmptyStateLink onClick={() => setSavingsSegment('for-you')}>
+                Browse For you
+              </EmptyStateLink>
+              <EmptyStateLink onClick={() => navigateToMarketplace()}>
+                Open Marketplace
+              </EmptyStateLink>
+            </EmptyStateCard>
           ) : (
             state.walletOffers
               .filter((o) => o.status === 'active')
@@ -206,6 +268,8 @@ export function SavingsScreen() {
                 key={offer.id}
                 offer={offer}
                 transferId={offer.transferId}
+                traded={isTradedWalletOffer(state.transfers, offer)}
+                bought={isPurchasedWalletOffer(state.transfers, offer)}
                 secondaryAction={{
                   label: 'Shop now',
                   onClick: () => {},
@@ -227,17 +291,110 @@ export function SavingsScreen() {
         ) : null}
 
         {!loading && (savingsSegment === 'all' || savingsSegment === 'for-you') ? (
-          state.offers
-            .filter((o) => o.transferable)
-            .slice(0, savingsSegment === 'for-you' ? 6 : 12)
-            .map((offer) => (
-              <CouponCard
+          catalogSlice.length === 0 ? (
+            <EmptyStateCard
+              title={
+                visibleCatalogOffers.length === 0 && state.offers.some((o) => o.transferable)
+                  ? 'Deals are on your card'
+                  : 'No deals to show'
+              }
+              description={
+                visibleCatalogOffers.length === 0 && state.offers.some((o) => o.transferable)
+                  ? 'You clipped everything in this view. Check On card or browse Marketplace.'
+                  : 'New savings offers will show up here when they’re available.'
+              }
+              icon={savingsSegment === 'for-you' ? '✨' : '🎟️'}
+            >
+              {visibleCatalogOffers.length === 0 && state.offers.some((o) => o.transferable) ? (
+                <>
+                  {activeWalletCount > 0 ? (
+                    <EmptyStateLink onClick={() => setSavingsSegment('on-card')}>
+                      View On card
+                    </EmptyStateLink>
+                  ) : null}
+                  <EmptyStateLink onClick={() => navigateToMarketplace()}>
+                    Browse Marketplace
+                  </EmptyStateLink>
+                </>
+              ) : null}
+            </EmptyStateCard>
+          ) : (
+            catalogSlice.map((offer) => (
+              <CatalogOfferCard
                 key={offer.id}
                 offer={offer}
-                secondaryAction={{ label: 'Add to card', onClick: () => {} }}
+                alreadyOnCard={isOfferOnCard(state, offer.entitlementId)}
+                onClip={() => {
+                  setDismissingClipOfferIds((prev) => new Set(prev).add(offer.id))
+                  clipOfferToCard(offer.id)
+                }}
+                onDismissed={() => {
+                  setDismissingClipOfferIds((prev) => {
+                    const next = new Set(prev)
+                    next.delete(offer.id)
+                    return next
+                  })
+                }}
               />
             ))
+          )
         ) : null}
+      </div>
+
+      <MarketplaceFilterSheet
+        open={marketplaceFiltersOpen}
+        filters={marketplaceFilters}
+        onChange={setMarketplaceFilters}
+        onClose={() => setMarketplaceFiltersOpen(false)}
+      />
+    </div>
+  )
+}
+
+function CatalogOfferCard({
+  offer,
+  alreadyOnCard,
+  onClip,
+  onDismissed,
+}: {
+  offer: Offer
+  alreadyOnCard: boolean
+  onClip: () => void
+  onDismissed: () => void
+}) {
+  const [dismissing, setDismissing] = useState(false)
+
+  const handleClip = () => {
+    if (dismissing || alreadyOnCard) return
+    onClip()
+    window.setTimeout(() => setDismissing(true), ADD_TO_CARD_SUCCESS_MS)
+    window.setTimeout(() => {
+      onDismissed()
+    }, ADD_TO_CARD_SUCCESS_MS + CLIP_DISMISS_MS)
+  }
+
+  return (
+    <div
+      className={`grid transition-[grid-template-rows,margin] duration-[720ms] ease-in-out motion-reduce:transition-none ${
+        dismissing ? 'grid-rows-[0fr] !mt-0' : 'grid-rows-[1fr]'
+      }`}
+      aria-hidden={dismissing}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`transition-all duration-[720ms] ease-in-out motion-reduce:transition-none ${
+            dismissing
+              ? 'pointer-events-none -translate-y-2 opacity-0'
+              : 'translate-y-0 opacity-100'
+          }`}
+        >
+          <CouponCard
+            offer={offer}
+            secondarySlot={
+              <AddToCardButton alreadyOnCard={alreadyOnCard} onClip={handleClip} />
+            }
+          />
+        </div>
       </div>
     </div>
   )
@@ -283,13 +440,16 @@ function MarketplaceBrowseCard({
             offer={offer}
             badge={listing.badge}
             marketplace
+            marketplaceBrowse
             price={listing.price}
             secondaryAction={{
               label: hiding ? 'Hiding…' : 'Hide',
               onClick: handleHide,
             }}
             primaryAction={{
-              label: browseReadOnly ? 'Buy (rules required)' : 'Buy',
+              label: browseReadOnly
+                ? `Buy — $${listing.price.toFixed(2)} (rules required)`
+                : `Buy — $${listing.price.toFixed(2)}`,
               onClick: onBuy,
               disabled: hiding,
             }}
@@ -301,40 +461,25 @@ function MarketplaceBrowseCard({
 }
 
 function EmptyMarketplace({
-  onReseed,
   filtered,
   onClearFilters,
 }: {
-  onReseed: () => void
   filtered: boolean
   onClearFilters: () => void
 }) {
   return (
-    <div className="rounded-[var(--radius-card)] border border-cvs-gray-border bg-white p-6 text-center">
-      <p className="font-semibold text-black">
-        {filtered ? 'No listings match your filters' : 'No listings yet'}
-      </p>
-      <p className="mt-2 text-sm text-cvs-gray-muted">
-        {filtered
+    <EmptyStateCard
+      title={filtered ? 'No listings match your filters' : 'No listings yet'}
+      description={
+        filtered
           ? 'Try clearing filters or browse all marketplace deals.'
-          : 'Seed data loads automatically. Use Prototype → Reseed if needed.'}
-      </p>
+          : 'Check back soon — members list coupons here when they’re ready to sell or trade.'
+      }
+      icon="🛒"
+    >
       {filtered ? (
-        <button
-          type="button"
-          onClick={onClearFilters}
-          className="mt-4 text-sm font-semibold text-cvs-blue"
-        >
-          Clear filters
-        </button>
+        <EmptyStateLink onClick={onClearFilters}>Clear filters</EmptyStateLink>
       ) : null}
-      <button
-        type="button"
-        onClick={onReseed}
-        className="mt-4 text-sm font-semibold text-cvs-blue"
-      >
-        Reload listings
-      </button>
-    </div>
+    </EmptyStateCard>
   )
 }

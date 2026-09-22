@@ -1,3 +1,5 @@
+import { hasActivityTrendSeed, mergeActivityTrendSeed } from '../data/activityTrendSeed'
+import { clearWelcomeSeen } from '../lib/welcomeGate'
 import { mergeMyListingsDemoIntoState, stateHasMyListingsDemo } from '../data/myListingsDemo'
 import {
   createSeedListings,
@@ -121,19 +123,31 @@ export function reseedData(): Pick<
     tradeProposals: [] as TradeProposal[],
     sellerHasPublishedBefore: false,
   }
-  return mergeMyListingsDemoIntoState(base)
+  const withListingsDemo = mergeMyListingsDemoIntoState(base)
+  const withTrend = mergeActivityTrendSeed({ ...DEFAULT_STATE, ...withListingsDemo })
+  return {
+    offers: withTrend.offers,
+    listings: withTrend.listings,
+    walletOffers: withTrend.walletOffers,
+    transfers: withTrend.transfers,
+    tradeProposals: withTrend.tradeProposals,
+    sellerHasPublishedBefore: withTrend.sellerHasPublishedBefore,
+  }
 }
 
 /** Full marketplace + wallet seed; keeps consent/ExtraCare/demo scenario flags */
 export function reseedListingsAndWalletState(prev: PrototypeState): PrototypeState {
   const seed = reseedData()
   const purchased = prev.walletOffers.filter((w) => w.transferId)
+  const userTransfers = prev.transfers.filter(
+    (t) => !t.id.startsWith('TXN-HIST-'),
+  )
   return {
     ...prev,
     offers: seed.offers,
     listings: seed.listings,
     walletOffers: [...seed.walletOffers, ...purchased],
-    transfers: prev.transfers,
+    transfers: [...seed.transfers, ...userTransfers],
     lastPurchaseTransferId: prev.lastPurchaseTransferId,
     tradeProposals: seed.tradeProposals ?? [],
     activeTradeProposalId: null,
@@ -189,10 +203,16 @@ export function loadState(): PrototypeState {
   const seed = reseedData()
   const saved = loadRaw()
   let state = saved ? stateFromSaved(saved, seed) : { ...DEFAULT_STATE, ...seed }
+  let migrated = false
   if (!stateHasMyListingsDemo(state.listings)) {
     state = mergeMyListingsDemoIntoState(state)
-    persistState(state)
+    migrated = true
   }
+  if (!hasActivityTrendSeed(state.transfers)) {
+    state = mergeActivityTrendSeed(state)
+    migrated = true
+  }
+  if (migrated) persistState(state)
   return state
 }
 
@@ -233,6 +253,7 @@ export function resetAllPrototypeData(): PrototypeState {
     lastTradeTransferIds: null,
     demoTradeConfirmTimeout: false,
   }
+  clearWelcomeSeen()
   persistState(fresh)
   return fresh
 }

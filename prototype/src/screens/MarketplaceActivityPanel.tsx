@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
-import { ListingStatusChart, WeeklyTrendChart } from '../components/ActivityCharts'
+import { ListingStatusChart, SavingsTrendChart } from '../components/ActivityCharts'
 import { usePrototype } from '../context/PrototypeContext'
-import { computeMarketplaceActivity } from '../lib/marketplaceActivity'
+import {
+  computeActivityTrend,
+  computeMarketplaceActivity,
+  type ActivityTrendRange,
+} from '../lib/marketplaceActivity'
 
 const cardClass =
   'rounded-[var(--radius-card)] border border-cvs-gray-border bg-white shadow-sm'
@@ -10,8 +14,13 @@ const cardClass =
 export function MarketplaceActivityPanel() {
   const { state } = usePrototype()
   const [valueMode, setValueMode] = useState<'saved' | 'earned'>('saved')
+  const [trendRange, setTrendRange] = useState<ActivityTrendRange>('week')
 
   const activity = useMemo(() => computeMarketplaceActivity(state), [state])
+  const trendPoints = useMemo(
+    () => computeActivityTrend(state, trendRange, activity.usesDemoShowcase),
+    [state, trendRange, activity.usesDemoShowcase],
+  )
   const displayValue =
     valueMode === 'saved' ? activity.totalSaved : activity.totalEarned
 
@@ -80,7 +89,11 @@ export function MarketplaceActivityPanel() {
         </p>
       </div>
 
-      <WeeklyTrendChart days={activity.weeklyActivity} />
+      <SavingsTrendChart
+        points={trendPoints}
+        range={trendRange}
+        onRangeChange={setTrendRange}
+      />
       <ListingStatusChart status={activity.listingStatus} />
     </div>
   )

@@ -1,9 +1,10 @@
 import { MOCK_MEMBER_ID } from '../data/seed'
 import { usePrototype } from '../context/PrototypeContext'
+import { EmptyStateCard, EmptyStateLink } from '../components/EmptyStateCard'
 import { findWalletOfferForTransfer } from '../lib/escrowTimeline'
 
 export function OrdersScreen() {
-  const { state, openPurchaseStatus, openSheet } = usePrototype()
+  const { state, openPurchaseStatus, openSheet, navigateToMarketplace } = usePrototype()
 
   const purchases = state.transfers
     .filter((t) => t.toMemberId === MOCK_MEMBER_ID && !t.tradeProposalId)
@@ -20,13 +21,15 @@ export function OrdersScreen() {
 
       <div className="px-4 py-4">
         {purchases.length === 0 ? (
-          <div className="rounded-xl border border-cvs-gray-border bg-white p-6 text-center">
-            <p className="font-semibold text-black">No marketplace purchases yet</p>
-            <p className="mt-2 text-sm text-cvs-gray-muted">
-              Buy a listing from Savings → Marketplace. Your transfer ID and escrow timeline will
-              show here.
-            </p>
-          </div>
+          <EmptyStateCard
+            title="No marketplace purchases yet"
+            description="Buy a listing from Savings → Marketplace. Your transfer ID and escrow timeline will show here."
+            icon="📦"
+          >
+            <EmptyStateLink onClick={() => navigateToMarketplace()}>
+              Browse Marketplace
+            </EmptyStateLink>
+          </EmptyStateCard>
         ) : (
           <ul className="space-y-3">
             {purchases.map((transfer) => {

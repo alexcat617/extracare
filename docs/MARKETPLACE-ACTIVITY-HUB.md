@@ -21,9 +21,10 @@ For a C2C coupon marketplace, members need a **light operational surface** (not 
 | Financials | Available balance & pending escrow | Hero card |
 | Inventory | Active listings & expiring &lt;48h | Counter chips |
 | Value | Total saved / total earned | Toggle (buyer vs seller) |
+| Trend | Saved vs earned over time | Line chart with Week / Month / 6 mo / Year |
 | Trust | Fulfillment % & rating | Text badge (not color-only) |
 
-**Mocks:** Trust defaults to 99% / 4.9★ unless a disputed transfer exists in prototype state. Escrow pending is $0 unless extended later. **Live:** listing counts, trade pending, saved/earned totals, listing status breakdown, transfer bumps on the 7-day chart. **Charts:** SVG **line trend** (saved vs earned) uses showcase series plus real `transfers` when you transact; stacked bar = listing statuses. Empty wallet → full **sample portfolio** banner on Activity.
+**Mocks:** Trust defaults to 99% / 4.9★ unless a disputed transfer exists in prototype state. Escrow pending is $0 unless extended later. **Live:** listing counts, trade pending, saved/earned totals, listing status breakdown, transfer bumps on the trend chart. **Charts:** SVG **line trend** (saved vs earned) with **Week / Month / 6 mo / Year** ranges; showcase curves layer on empty sessions plus real `transfers` when you transact; stacked bar = listing statuses. Empty wallet → full **sample portfolio** on Activity metrics.
 
 ## Relationship to FEAT-04
 

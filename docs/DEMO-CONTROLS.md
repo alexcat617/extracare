@@ -27,7 +27,7 @@ One tap each: resets the right mock state and navigates. Presets do **not** auto
 
 | Preset | State | Navigation |
 |--------|--------|------------|
-| **Fresh start** | Factory reset (consent off, seed data) | Savings → All |
+| **Fresh start** | Factory reset (consent off, seed data) | **Home** splash → tap **Start** for Savings |
 | **Sam: Browse & buy** | Consent given, reseed marketplace + wallet | Savings → Marketplace **Browse** |
 | **Sam: Orders & escrow** | Consent given + sample completed purchase | **Orders** tab (FEAT-05) |
 | **Jordan: Listings** | Consent given, Jordan seller pack (listings + pending trade inbox) | Marketplace → **Listings** |

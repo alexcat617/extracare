@@ -28,8 +28,8 @@ Work item shape: [Persona lens](./PERSONAS.md) → User stories → Requirements
 | [FEAT-03](./features/FEAT-03-trade.md) | Trade | B | `draft` | [map](./features/maps/FEAT-03-map.md) | FLOW-03 |
 | [FEAT-04](./features/FEAT-04-my-listings.md) | My listings | C | `draft` | [map](./features/maps/FEAT-04-map.md) | FLOW-05 |
 | [FEAT-05](./features/FEAT-05-trust-escrow-dispute.md) | Trust: escrow + dispute | C | `draft` | [map](./features/maps/FEAT-05-map.md) | FLOW-06 |
-| [FEAT-06](./features/FEAT-06-redeem.md) | Redeem & close loop | D | `draft` | [map](./features/maps/FEAT-06-map.md) | FLOW-07 |
-| [FEAT-07](./features/FEAT-07-gift.md) | Gift | D | `draft` | [map](./features/maps/FEAT-07-map.md) | FLOW-04 |
+| [FEAT-06](./features/FEAT-06-redeem.md) | Redeem & close loop | D | `draft` (case study: docs only) | [map](./features/maps/FEAT-06-map.md) | FLOW-07 |
+| [FEAT-07](./features/FEAT-07-gift.md) | Gift | D | `draft` (case study: docs only) | [map](./features/maps/FEAT-07-map.md) | FLOW-04 |
 
 **Status values:** `draft` → `ready` → `building` → `done`
 
@@ -42,7 +42,7 @@ Work item shape: [Persona lens](./PERSONAS.md) → User stories → Requirements
 | **A — Core marketplace** | FEAT-00 → FEAT-01 + FEAT-02 | List coupon → another user buys → offer in buyer wallet |
 | **B — Differentiation** | FEAT-03 | Propose trade → dual confirm → swap |
 | **C — Seller ops + trust** | FEAT-04 + FEAT-05 | Edit/cancel listing; dispute / escrow story |
-| **D — Polish** | FEAT-06, FEAT-07, fuller FLOW-00 | Redeem closure; gift (optional) |
+| **D — Polish** | FEAT-06, FEAT-07, fuller FLOW-00 | **Out of prototype scope** for this case study; flows documented for “what’s next” |
 
 ---
 

@@ -13,6 +13,7 @@ import type { WalletOffer } from '../types/marketplace'
 import { CouponOfferSection } from './CouponOfferSection'
 import { BottomSheet, OutlineButton, PrimaryButton, SuccessBanner } from './BottomSheet'
 import { LoadingSpinner } from './LoadingSpinner'
+import { EmptyStateCard } from './EmptyStateCard'
 import { MobileCheckboxCard } from './MobileFormControls'
 
 export function TradeFlowSheets() {
@@ -25,7 +26,6 @@ export function TradeFlowSheets() {
     submitTradeBundle,
     respondTradeAsSeller,
     goToWallet,
-    runDataAction,
   } = usePrototype()
 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -146,20 +146,20 @@ export function TradeFlowSheets() {
             can’t be added until you delist them.
           </p>
           {tradeCandidates.length === 0 ? (
-            <div className="space-y-3 rounded-lg border border-cvs-gray-border p-3">
-              <p className="text-cvs-gray-muted">
-                Nothing on your On card to trade. Buy a listing or restore demo coupons below.
-              </p>
+            <EmptyStateCard
+              title="Nothing on your card to trade"
+              description="Clip deals from Savings or buy a coupon on Marketplace, then try again."
+              icon="🔄"
+            >
               <OutlineButton
                 onClick={() => {
-                  runDataAction('reseed')
                   closeSheet()
                   goToWallet()
                 }}
               >
-                Restore demo wallet coupons
+                Go to On card
               </OutlineButton>
-            </div>
+            </EmptyStateCard>
           ) : (
             <div className="space-y-3">
               {tradeCandidates.map((offer) => {

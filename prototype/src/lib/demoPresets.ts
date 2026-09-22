@@ -46,7 +46,7 @@ export function applyDemoPreset(
         selectedListingId: null,
         savingsSegment: 'all',
         marketplaceView: 'browse',
-        mainTab: 'savings',
+        mainTab: 'home',
       }
     }
     case 'sam-buy': {

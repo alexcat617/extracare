@@ -1,4 +1,11 @@
-import type { ListingStatusBreakdown, WeeklyActivityDay } from '../lib/marketplaceActivity'
+import {
+  ACTIVITY_TREND_RANGE_LABEL,
+  type ActivityTrendPoint,
+  type ActivityTrendRange,
+  type ListingStatusBreakdown,
+} from '../lib/marketplaceActivity'
+
+const TREND_RANGES: ActivityTrendRange[] = ['week', 'month', '6m', 'year']
 
 function linePath(
   values: number[],
@@ -7,7 +14,7 @@ function linePath(
   padding: number,
   maxVal: number,
 ): string {
-  const step = (width - padding * 2) / (values.length - 1)
+  const step = (width - padding * 2) / Math.max(values.length - 1, 1)
   const points = values.map((v, i) => {
     const x = padding + i * step
     const y = padding + (height - padding * 2) * (1 - v / maxVal)
@@ -23,7 +30,7 @@ function areaPath(
   padding: number,
   maxVal: number,
 ): string {
-  const step = (width - padding * 2) / (values.length - 1)
+  const step = (width - padding * 2) / Math.max(values.length - 1, 1)
   const baseY = height - padding
   let d = `M ${padding},${baseY}`
   values.forEach((v, i) => {
@@ -35,36 +42,70 @@ function areaPath(
   return d
 }
 
-export function WeeklyTrendChart({ days }: { days: WeeklyActivityDay[] }) {
+const TREND_TAB_LABEL: Record<ActivityTrendRange, string> = {
+  week: 'Week',
+  month: 'Month',
+  '6m': '6 mo',
+  year: 'Year',
+}
+
+export function SavingsTrendChart({
+  points,
+  range,
+  onRangeChange,
+}: {
+  points: ActivityTrendPoint[]
+  range: ActivityTrendRange
+  onRangeChange: (range: ActivityTrendRange) => void
+}) {
   const width = 320
   const height = 120
   const pad = 8
-  const saved = days.map((d) => d.saved)
-  const earned = days.map((d) => d.earned)
+  const saved = points.map((d) => d.saved)
+  const earned = points.map((d) => d.earned)
   const maxVal = Math.max(1, ...saved, ...earned)
   const savedPath = linePath(saved, width, height, pad, maxVal)
   const earnedPath = linePath(earned, width, height, pad, maxVal)
   const savedArea = areaPath(saved, width, height, pad, maxVal)
   const earnedArea = areaPath(earned, width, height, pad, maxVal)
-  const weekSaved = saved.reduce((a, b) => a + b, 0)
-  const weekEarned = earned.reduce((a, b) => a + b, 0)
+  const periodSaved = saved.reduce((a, b) => a + b, 0)
+  const periodEarned = earned.reduce((a, b) => a + b, 0)
+  const xStep = (width - pad * 2) / Math.max(points.length - 1, 1)
+  const rangeCaption = ACTIVITY_TREND_RANGE_LABEL[range]
 
   return (
     <div className="rounded-[var(--radius-card)] border border-cvs-gray-border bg-white p-4 shadow-sm">
-      <div className="mb-1 flex items-baseline justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold text-black">Savings trend</h2>
-        <span className="rounded-full bg-cvs-gray-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cvs-gray-muted">
-          7 days
-        </span>
+        <div
+          className="flex max-w-full rounded-full bg-cvs-gray-border/50 p-0.5"
+          role="tablist"
+          aria-label="Trend time range"
+        >
+          {TREND_RANGES.map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={range === id}
+              onClick={() => onRangeChange(id)}
+              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition sm:px-3 sm:text-xs ${
+                range === id ? 'bg-white text-black shadow-sm' : 'text-cvs-gray-muted'
+              }`}
+            >
+              {TREND_TAB_LABEL[id]}
+            </button>
+          ))}
+        </div>
       </div>
       <p className="mb-3 text-xs text-cvs-gray-muted">
-        Red = coupon value saved · Blue = cash earned from sales
+        Red = coupon value saved · Blue = cash earned · {rangeCaption}
       </p>
       <svg
         width="100%"
         viewBox={`0 0 ${width} ${height + 22}`}
         role="img"
-        aria-label={`Seven day trend: about ${weekSaved.toFixed(0)} dollars saved and ${weekEarned.toFixed(0)} dollars earned`}
+        aria-label={`${rangeCaption} trend: about ${periodSaved.toFixed(0)} dollars saved and ${periodEarned.toFixed(0)} dollars earned`}
         className="max-h-[150px]"
       >
         <path d={earnedArea} className="fill-cvs-blue/15" />
@@ -85,12 +126,14 @@ export function WeeklyTrendChart({ days }: { days: WeeklyActivityDay[] }) {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {days.map((day, i) => {
-          const step = (width - pad * 2) / (days.length - 1)
-          const x = pad + i * step
+        {points.map((day, i) => {
+          const x = pad + i * xStep
+          const showLabel =
+            points.length <= 7 || i === 0 || i === points.length - 1 || i % 2 === 0
+          if (!showLabel) return null
           return (
             <text
-              key={day.label}
+              key={`${day.label}-${i}`}
               x={x}
               y={height + 14}
               textAnchor="middle"
@@ -103,15 +146,22 @@ export function WeeklyTrendChart({ days }: { days: WeeklyActivityDay[] }) {
       </svg>
       <div className="mt-2 flex justify-between gap-3 text-xs text-cvs-gray-muted">
         <span>
-          Week total saved:{' '}
-          <strong className="font-semibold text-black">${weekSaved.toFixed(0)}</strong>
+          Period saved:{' '}
+          <strong className="font-semibold text-black">${periodSaved.toFixed(0)}</strong>
         </span>
         <span>
-          Week total earned:{' '}
-          <strong className="font-semibold text-black">${weekEarned.toFixed(0)}</strong>
+          Period earned:{' '}
+          <strong className="font-semibold text-black">${periodEarned.toFixed(0)}</strong>
         </span>
       </div>
     </div>
+  )
+}
+
+/** @deprecated use SavingsTrendChart */
+export function WeeklyTrendChart({ days }: { days: ActivityTrendPoint[] }) {
+  return (
+    <SavingsTrendChart points={days} range="week" onRangeChange={() => {}} />
   )
 }
 
