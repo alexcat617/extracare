@@ -7,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { hasSeenWelcome } from '../lib/welcomeGate'
 import {
   clearConsent,
   loadState,
@@ -179,9 +178,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
   const [selectedWalletOfferId, setSelectedWalletOfferId] = useState<string | null>(null)
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null)
-  const [mainTab, setMainTab] = useState<MainTab>(() =>
-    hasSeenWelcome() ? 'savings' : 'home',
-  )
+  const [mainTab, setMainTab] = useState<MainTab>('home')
   const [savingsSegment, setSavingsSegment] = useState<SavingsSegment>('all')
   const [marketplaceView, setMarketplaceView] = useState<MarketplaceView>('browse')
 
