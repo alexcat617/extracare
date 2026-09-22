@@ -1,10 +1,11 @@
+import type { ReactElement } from 'react'
 import type { MainTab } from '../context/PrototypeContext'
 import { NavIconHome, NavIconOrders, NavIconSavings } from './BottomNavIcons'
 
 const TABS: {
   id: MainTab
   label: string
-  Icon: () => JSX.Element
+  Icon: () => ReactElement
 }[] = [
   { id: 'home', label: 'Home', Icon: NavIconHome },
   { id: 'savings', label: 'Savings', Icon: NavIconSavings },
