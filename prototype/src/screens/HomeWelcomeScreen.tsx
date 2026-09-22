@@ -15,7 +15,7 @@ export function HomeWelcomeScreen({ onStart, onOpenCaseStudy }: HomeWelcomeScree
         <p className="text-5xl font-black leading-none tracking-tight text-cvs-red">CVS</p>
         <p className="mt-2 text-sm font-semibold tracking-wide text-cvs-gray-muted">ExtraCare</p>
         <p className="mt-8 max-w-[320px] text-lg font-medium leading-snug text-cvs-gray-muted">
-          Case-study prototype — coupons, Marketplace, and protected buys.
+          Reimagining ExtraCare: Coupon sharing, Marketplace, and secure buys
         </p>
       </div>
       <div className="mt-10 w-full max-w-sm space-y-3 px-2">
